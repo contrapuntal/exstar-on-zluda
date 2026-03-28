@@ -1,5 +1,13 @@
 #![cfg(target_os = "windows")]
 
+mod exstar;
+use exstar::prestartcheck::{exstar_patch_prestartcheck_module, exstar_should_suppress_prestartcheck_timer};
+use exstar::trace::{
+    env_flag, exstar_appui_trace_enabled, exstar_exe_trace_enabled, exstar_host_trace_enabled,
+    exstar_host_trace_file, exstar_hub_light_trace_enabled, exstar_light_trace_enabled,
+    exstar_trace_logging_enabled, log_exstar_host,
+};
+
 use detours_sys::{
     DetourAttach, DetourCopyPayloadToProcess, DetourDetach, DetourRestoreAfterWith,
     DetourTransactionAbort, DetourTransactionBegin, DetourTransactionCommit,
@@ -98,12 +106,12 @@ static mut DETOUR_DROP: Option<DetourDetachGuard> = None;
 static mut DETOUR_PATHS: Option<DetourPaths> = None;
 static mut SELF_PATH: Option<CString> = None;
 
-static EXSTAR_HOST_TRACE: OnceLock<bool> = OnceLock::new();
-static EXSTAR_LIGHT_TRACE: OnceLock<bool> = OnceLock::new();
+pub(crate) static EXSTAR_HOST_TRACE: OnceLock<bool> = OnceLock::new();
+pub(crate) static EXSTAR_LIGHT_TRACE: OnceLock<bool> = OnceLock::new();
 /// Stores the handle of the "EinScan-Pro.exe" duplicate-instance mutex
 /// created by the bootstrap Hub, so preserve_hub_exit can close it.
 static EXSTAR_DUPLICATE_MUTEX_HANDLE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-static EXSTAR_HOST_TRACE_FILE: OnceLock<Option<Mutex<File>>> = OnceLock::new();
+pub(crate) static EXSTAR_HOST_TRACE_FILE: OnceLock<Option<Mutex<File>>> = OnceLock::new();
 static EXSTAR_HUB_EXIT_DELAY_MS: OnceLock<u64> = OnceLock::new();
 static EXSTAR_HUB_STARTUP_COMPAT_TIMEOUT_MS: OnceLock<u64> = OnceLock::new();
 static EXSTAR_EINSCAN_NET_SVR_COMPAT: OnceLock<bool> = OnceLock::new();
@@ -113,8 +121,8 @@ static EXSTAR_MANAGER_SKIP_SECOND_SWEEP: OnceLock<bool> = OnceLock::new();
 static EXSTAR_MANAGER_PRESERVE_CORE_PEERS: OnceLock<bool> = OnceLock::new();
 static EXSTAR_MANAGER_PRESERVE_HUB_AND_SCANHUB: OnceLock<bool> = OnceLock::new();
 static EXSTAR_MANAGER_SKIP_KILL_TARGETS: OnceLock<Vec<String>> = OnceLock::new();
-static EXSTAR_APPUI_TRACE: OnceLock<bool> = OnceLock::new();
-static EXSTAR_EXE_TRACE: OnceLock<bool> = OnceLock::new();
+pub(crate) static EXSTAR_APPUI_TRACE: OnceLock<bool> = OnceLock::new();
+pub(crate) static EXSTAR_EXE_TRACE: OnceLock<bool> = OnceLock::new();
 static EXSTAR_FORCE_MAIN_WINDOW_VISIBLE: OnceLock<bool> = OnceLock::new();
 static EXSTAR_SKIP_QTTUNNEL_CONNECT_HOOK: OnceLock<bool> = OnceLock::new();
 static EXSTAR_HUB_STARTUP_COMPAT_START: OnceLock<Instant> = OnceLock::new();
@@ -446,28 +454,6 @@ impl DetourPaths {
     }
 }
 
-fn env_flag(name: &str) -> bool {
-    let value = match env::var(name) {
-        Ok(value) => value,
-        Err(_) => return false,
-    };
-    !matches!(
-        value.trim().to_ascii_lowercase().as_str(),
-        "" | "0" | "false" | "no" | "off"
-    )
-}
-
-fn exstar_host_trace_enabled() -> bool {
-    *EXSTAR_HOST_TRACE.get_or_init(|| env_flag("ZLUDA_EXSTAR_HOST_TRACE"))
-}
-
-fn exstar_light_trace_enabled() -> bool {
-    *EXSTAR_LIGHT_TRACE.get_or_init(|| env_flag("ZLUDA_EXSTAR_LIGHT_TRACE"))
-}
-
-fn exstar_trace_logging_enabled() -> bool {
-    exstar_host_trace_enabled() || exstar_light_trace_enabled()
-}
 
 fn exstar_einscan_net_svr_compat_enabled() -> bool {
     *EXSTAR_EINSCAN_NET_SVR_COMPAT.get_or_init(|| env_flag("ZLUDA_EXSTAR_EINSCAN_NET_SVR_COMPAT"))
@@ -690,13 +676,6 @@ fn exstar_processmg_branch_label(strings: &str) -> Option<&'static str> {
     }
 }
 
-fn exstar_appui_trace_enabled() -> bool {
-    *EXSTAR_APPUI_TRACE.get_or_init(|| env_flag("ZLUDA_EXSTAR_APPUI_TRACE"))
-}
-
-fn exstar_exe_trace_enabled() -> bool {
-    *EXSTAR_EXE_TRACE.get_or_init(|| env_flag("ZLUDA_EXSTAR_EXE_TRACE"))
-}
 
 fn exstar_force_main_window_visible_enabled() -> bool {
     *EXSTAR_FORCE_MAIN_WINDOW_VISIBLE
@@ -783,73 +762,12 @@ fn exstar_hub_main_window_compat_active(trigger: &str) -> bool {
     exstar_hub_startup_compat_active(trigger) && exstar_on_main_window_thread()
 }
 
-fn exstar_hub_light_trace_enabled() -> bool {
-    exstar_light_trace_enabled() && exstar_window_trace_enabled()
-}
 
 fn exstar_skip_qttunnel_connect_hook_enabled() -> bool {
     *EXSTAR_SKIP_QTTUNNEL_CONNECT_HOOK
         .get_or_init(|| env_flag("ZLUDA_EXSTAR_SKIP_QTTUNNEL_CONNECT_HOOK"))
 }
 
-fn exstar_host_trace_path() -> std::path::PathBuf {
-    env::var_os("ZLUDA_EXSTAR_HOST_TRACE_PATH")
-        .map(Into::into)
-        .unwrap_or_else(|| {
-            let mut path = env::temp_dir();
-            path.push("zluda");
-            path.push(format!("zluda-exstar-host-{}.log", std::process::id()));
-            path
-        })
-}
-
-fn exstar_host_trace_file() -> Option<&'static Mutex<File>> {
-    EXSTAR_HOST_TRACE_FILE
-        .get_or_init(|| {
-            if !exstar_trace_logging_enabled() {
-                return None;
-            }
-            let path = exstar_host_trace_path();
-            if let Some(parent) = path.parent() {
-                if let Err(err) = create_dir_all(parent) {
-                    eprintln!(
-                        "[ZLUDA_EXSTAR_HOST] failed to create log dir path={} error={}",
-                        parent.display(),
-                        err
-                    );
-                    return None;
-                }
-            }
-            match OpenOptions::new().create(true).append(true).open(&path) {
-                Ok(file) => Some(Mutex::new(file)),
-                Err(err) => {
-                    eprintln!(
-                        "[ZLUDA_EXSTAR_HOST] failed to open log path={} error={}",
-                        path.display(),
-                        err
-                    );
-                    None
-                }
-            }
-        })
-        .as_ref()
-}
-
-fn log_exstar_host(args: std::fmt::Arguments<'_>) {
-    if !exstar_trace_logging_enabled() {
-        return;
-    }
-    let line = format!("[ZLUDA_EXSTAR_HOST pid={}] {args}", unsafe {
-        GetCurrentProcessId()
-    });
-    let mut stderr = std::io::stderr().lock();
-    let _ = writeln!(stderr, "{line}");
-    if let Some(file) = exstar_host_trace_file() {
-        if let Ok(mut file) = file.lock() {
-            let _ = writeln!(file, "{line}");
-        }
-    }
-}
 
 fn launch_targets_einscan_net_svr(launch: &HostLaunchInfo) -> bool {
     launch
@@ -2054,10 +1972,6 @@ fn payload_strings(payload: *const c_void) -> String {
     .unwrap_or_else(|_| "<panic>".to_string())
 }
 
-fn exstar_should_suppress_prestartcheck_timer(callback: *const c_void) -> bool {
-    let _ = callback;
-    false
-}
 
 #[link(name = "ntdll.dll", kind = "raw-dylib")]
 unsafe extern "system" {
@@ -7669,62 +7583,6 @@ fn dll_file_name(dll_name_arg: *const UNICODE_STRING) -> Result<Vec<u16>, NTSTAT
     Ok(dll_name.to_vec())
 }
 
-unsafe fn exstar_patch_prestartcheck_module(handle: *mut c_void) {
-    const PATCH_OFFSET: usize = 0x59f1;
-    const PATCH_LEN: usize = 8;
-    const ORIG_BYTES: [u8; PATCH_LEN] = [0x84, 0xDB, 0x0F, 0x84, 0xA7, 0x07, 0x00, 0x00];
-    const BAD_PATCH_BYTES: [u8; PATCH_LEN] = [0x90, 0x90, 0xE9, 0x35, 0x0C, 0x00, 0x00, 0x90];
-    const FIXED_PATCH_BYTES: [u8; PATCH_LEN] = [0x84, 0xDB, 0xE9, 0xA8, 0x07, 0x00, 0x00, 0x90];
-
-    if handle.is_null() {
-        return;
-    }
-    let patch_ptr = (handle as usize + PATCH_OFFSET) as *mut u8;
-    let current = slice::from_raw_parts(patch_ptr.cast_const(), PATCH_LEN);
-    if current == FIXED_PATCH_BYTES {
-        return;
-    }
-    if current != ORIG_BYTES && current != BAD_PATCH_BYTES {
-        log_exstar_host(format_args!(
-            "kind=compat action=patch_prestartcheck status=unexpected_bytes handle={:p} offset=0x{:x} bytes={:02x?}",
-            handle,
-            PATCH_OFFSET,
-            current
-        ));
-        return;
-    }
-
-    let mut old_protect = 0u32;
-    if windows_sys::Win32::System::Memory::VirtualProtect(
-        patch_ptr.cast(),
-        PATCH_LEN,
-        PAGE_EXECUTE_READWRITE,
-        &mut old_protect,
-    ) == 0
-    {
-        log_exstar_host(format_args!(
-            "kind=compat action=patch_prestartcheck status=virtualprotect_failed handle={:p} offset=0x{:x}",
-            handle,
-            PATCH_OFFSET
-        ));
-        return;
-    }
-    ptr::copy_nonoverlapping(FIXED_PATCH_BYTES.as_ptr(), patch_ptr, PATCH_LEN);
-    let mut restore_protect = 0u32;
-    windows_sys::Win32::System::Memory::VirtualProtect(
-        patch_ptr.cast(),
-        PATCH_LEN,
-        old_protect,
-        &mut restore_protect,
-    );
-    log_exstar_host(format_args!(
-        "kind=compat action=patch_prestartcheck status=patched handle={:p} offset=0x{:x} from={:02x?} to={:02x?}",
-        handle,
-        PATCH_OFFSET,
-        current,
-        FIXED_PATCH_BYTES
-    ));
-}
 
 unsafe fn exstar_host_trace_on_load(
     dll_name_arg: *const UNICODE_STRING,
