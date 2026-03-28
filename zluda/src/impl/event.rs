@@ -1,0 +1,103 @@
+use super::debug;
+use hip_runtime_sys::*;
+
+pub(crate) unsafe fn create(event: *mut hipEvent_t, flags: ::core::ffi::c_uint) -> hipError_t {
+    // Flag values are compatible between CUDA and HIP for 0,1,2,4
+    hipEventCreateWithFlags(event, flags)
+}
+
+pub(crate) unsafe fn elapsed_time(
+    milliseconds: *mut ::core::ffi::c_float,
+    start: hipEvent_t,
+    end: hipEvent_t,
+) -> hipError_t {
+    // Flag values are compatible between CUDA and HIP for 0,1,2,4
+    hipEventElapsedTime(milliseconds, start, end)
+}
+
+pub(crate) unsafe fn elapsed_time_v2(
+    milliseconds: *mut ::core::ffi::c_float,
+    start: hipEvent_t,
+    end: hipEvent_t,
+) -> hipError_t {
+    elapsed_time(milliseconds, start, end)
+}
+
+pub(crate) unsafe fn query(event: hipEvent_t) -> hipError_t {
+    hipEventQuery(event)
+}
+
+pub(crate) unsafe fn destroy_v2(event: hipEvent_t) -> hipError_t {
+    hipEventDestroy(event)
+}
+
+pub(crate) unsafe fn record(event: hipEvent_t, stream: hipStream_t) -> hipError_t {
+    debug::log_sync(format_args!(
+        "op=hipEventRecord phase=enter event={:?} stream={:?}",
+        event, stream.0,
+    ));
+    let result = hipEventRecord(event, stream);
+    debug::log_sync(format_args!(
+        "op=hipEventRecord phase=return event={:?} stream={:?} result_code={} result_name={}",
+        event,
+        stream.0,
+        debug::hip_error_code(result),
+        debug::hip_error_name(result),
+    ));
+    result
+}
+
+pub(crate) unsafe fn record_ptsz(event: hipEvent_t, stream: hipStream_t) -> hipError_t {
+    record(event, stream)
+}
+
+pub(crate) unsafe fn record_with_flags(
+    event: hipEvent_t,
+    stream: hipStream_t,
+    flags: ::core::ffi::c_uint,
+) -> hipError_t {
+    // Flag values are compatible between CUDA and HIP for 0,1
+
+    // The ROCm 6.4.0 headers have a declaration for hipEventRecordWithFlags, but the library has
+    // no implementation. The implementation was added in ROCm 6.4.2. We only support the default flag for now.
+    if flags != hipEventRecordDefault {
+        return hipError_t::ErrorInvalidValue;
+    }
+
+    debug::log_sync(format_args!(
+        "op=hipEventRecordWithFlags phase=enter event={:?} stream={:?} flags={}",
+        event, stream.0, flags,
+    ));
+    let result = hipEventRecord(event, stream);
+    debug::log_sync(format_args!(
+        "op=hipEventRecordWithFlags phase=return event={:?} stream={:?} result_code={} result_name={}",
+        event,
+        stream.0,
+        debug::hip_error_code(result),
+        debug::hip_error_name(result),
+    ));
+    result
+}
+
+pub(crate) unsafe fn record_with_flags_ptsz(
+    event: hipEvent_t,
+    stream: hipStream_t,
+    flags: ::core::ffi::c_uint,
+) -> hipError_t {
+    record_with_flags(event, stream, flags)
+}
+
+pub(crate) unsafe fn synchronize(event: hipEvent_t) -> hipError_t {
+    debug::log_sync(format_args!(
+        "op=hipEventSynchronize phase=enter event={:?}",
+        event,
+    ));
+    let result = hipEventSynchronize(event);
+    debug::log_sync(format_args!(
+        "op=hipEventSynchronize phase=return event={:?} result_code={} result_name={}",
+        event,
+        debug::hip_error_code(result),
+        debug::hip_error_name(result),
+    ));
+    result
+}

@@ -1,0 +1,31 @@
+[package]
+name = "zluda_blas"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+name = "cublas"
+
+[dependencies]
+cuda_macros = { path = "../cuda_macros" }
+cuda_types = { path = "../cuda_types" }
+zluda_common = { path = "../zluda_common" }
+rocblas-sys = { path = "../ext/rocblas-sys" }
+hip_runtime-sys = { path = "../ext/hip_runtime-sys" }
+zluda_blaslt = { path = "../zluda_blaslt" }
+libloading = "0.8"
+
+[dev-dependencies]
+paste = "1.0"
+
+[target.'cfg(windows)'.dependencies]
+zluda_windows = { path = "../zluda_windows" }
+libloading = "0.8"
+
+[package.metadata.zluda]
+linux_symlinks = ["libcublas.so.11", "libcublas.so.12", "libcublas.so.13"]
+windows_paths = ["cublas64_11.dll", "cublas64_12.dll", "cublas64_13.dll"]
+
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "3.0"

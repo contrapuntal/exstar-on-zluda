@@ -1,0 +1,23 @@
+[package]
+name = "zluda_ml"
+version = "0.0.0"
+authors = ["Andrzej Janik <vosen@vosen.pl>"]
+edition = "2021"
+
+[lib]
+name = "nvml"
+crate-type = ["cdylib"]
+
+[dependencies]
+cuda_macros = { path = "../cuda_macros" }
+cuda_types = { path = "../cuda_types" }
+zluda_common = { path = "../zluda_common" }
+
+[target.'cfg(unix)'.dependencies]
+rocm_smi-sys = { path = "../ext/rocm_smi-sys" }
+
+[package.metadata.zluda]
+linux_symlinks = [
+    "libnvidia-ml.so",
+    "libnvidia-ml.so.1",
+]

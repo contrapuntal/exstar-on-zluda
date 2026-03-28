@@ -1,0 +1,56 @@
+[package]
+name = "zluda"
+version = "0.0.0"
+authors = ["Andrzej Janik <vosen@vosen.pl>"]
+edition = "2021"
+
+[lib]
+name = "nvcuda"
+crate-type = ["cdylib"]
+
+[dependencies]
+llvm_zluda = { path = "../llvm_zluda" }
+ptx_parser = { path = "../ptx_parser" }
+ptx = { path = "../ptx" }
+cuda_types = { path = "../cuda_types" }
+cuda_macros = { path = "../cuda_macros" }
+hip_runtime-sys = { path = "../ext/hip_runtime-sys" }
+dark_api = { path = "../dark_api" }
+zluda_cache = { path = "../zluda_cache" }
+kernel_metadata = { path = "../kernel_metadata" }
+lazy_static = "1.4"
+num_enum = "0.4"
+lz4-sys = "1.9"
+tempfile = "3"
+paste = "1.0"
+rustc-hash = "2.0.0"
+zluda_common = { path = "../zluda_common" }
+blake3 = "1.8.2"
+serde = "1.0.219"
+serde_json = "1.0.142"
+libloading = "0.8"
+
+[target.'cfg(windows)'.dependencies]
+zluda_windows = { path = "../zluda_windows" }
+windows = { version = "0.62.2", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+] }
+
+
+[target.'cfg(not(windows))'.dependencies]
+libc = "0.2"
+dtor = "0.0.7"
+
+[build-dependencies]
+vergen-gix = "1.0.9"
+
+[dev-dependencies]
+
+[package.metadata.zluda]
+linux_symlinks = [
+    "libcuda.so",
+    "libcuda.so.1",
+]
+[package.metadata.zluda.windows_extra_files]
+"nvcudart_hybrid64.dll" = "bin/nvcudart_hybrid64.dll"

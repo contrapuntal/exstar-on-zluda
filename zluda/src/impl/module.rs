@@ -1,0 +1,426 @@
+use super::{debug, driver};
+use crate::r#impl::function;
+use crate::r#impl::{driver::GlobalState, function::Function};
+use cuda_types::{cuda::*, dark_api::FatbinFileHeader};
+use hip_runtime_sys::*;
+use rustc_hash::FxHashMap;
+use std::collections::hash_map;
+use std::sync::Mutex;
+use std::{
+    borrow::Cow,
+    ffi::{CStr, CString},
+    fs, mem,
+    ops::ControlFlow,
+};
+use zluda_common::{CodeLibraryRef, CodeModuleRef, ZludaObject};
+
+fn library_kind_name(library: CodeLibraryRef<'_>) -> &'static str {
+    match library {
+        CodeLibraryRef::FatbincWrapper(_) => "fatbinc_wrapper",
+        CodeLibraryRef::FatbinHeader(_) => "fatbin_header",
+        CodeLibraryRef::Text(_) => "text",
+        CodeLibraryRef::Elf(_) => "elf",
+        CodeLibraryRef::Archive(_) => "archive",
+    }
+}
+
+fn summarize_library(library: CodeLibraryRef<'_>) -> String {
+    let mut text_modules = 0usize;
+    let mut elf_modules = 0usize;
+    let mut archive_modules = 0usize;
+    let mut file_ptx = 0usize;
+    let mut file_elf = 0usize;
+    let mut file_other = 0usize;
+    let mut parse_errors = 0usize;
+    unsafe {
+        CodeLibraryRef::iterate_modules(library, |_, module| match module {
+            Ok(CodeModuleRef::Text(_)) => text_modules += 1,
+            Ok(CodeModuleRef::Elf(_)) => elf_modules += 1,
+            Ok(CodeModuleRef::Archive(_)) => archive_modules += 1,
+            Ok(CodeModuleRef::File(file)) => match file.header.kind {
+                FatbinFileHeader::HEADER_KIND_PTX => file_ptx += 1,
+                FatbinFileHeader::HEADER_KIND_ELF => file_elf += 1,
+                _ => file_other += 1,
+            },
+            Err(_) => parse_errors += 1,
+        });
+    }
+    format!(
+        "text_modules={} elf_modules={} archive_modules={} file_ptx={} file_elf={} file_other={} parse_errors={}",
+        text_modules,
+        elf_modules,
+        archive_modules,
+        file_ptx,
+        file_elf,
+        file_other,
+        parse_errors
+    )
+}
+
+pub(crate) struct Module {
+    pub(crate) base: hipModule_t,
+    pub(crate) sm_version: u32,
+    mutable: Mutex<ModuleMutable>,
+}
+
+struct ModuleMutable {
+    functions: FxHashMap<CString, Box<Function>>,
+}
+
+impl ModuleMutable {
+    pub(crate) fn get_function(
+        &mut self,
+        module: hipModule_t,
+        sm_version: u32,
+        name: CString,
+    ) -> Result<&Function, CUerror> {
+        Ok(match self.functions.entry(name) {
+            hash_map::Entry::Occupied(entry) => &*entry.into_mut(),
+            hash_map::Entry::Vacant(entry) => {
+                if let Some(blocked_substring) = debug::blocked_kernel_substring() {
+                    let kernel_name = entry.key().to_string_lossy();
+                    if kernel_name.contains(blocked_substring) {
+                        debug::log_launch(format_args!(
+                            "phase=resolve_blocked kernel={} reason=substring_match pattern={}",
+                            kernel_name, blocked_substring,
+                        ));
+                        return Err(CUerror::NOT_FOUND);
+                    }
+                }
+                let mut func_handle = unsafe { std::mem::zeroed() };
+                unsafe { hipModuleGetFunction(&mut func_handle, module, entry.key().as_ptr()) }?;
+                debug::log_launch(format_args!(
+                    "phase=resolve kernel={} hip_func={:?} module={:?}",
+                    entry.key().to_string_lossy(),
+                    func_handle.0,
+                    module.0,
+                ));
+                let func = Box::new(Function {
+                    base: func_handle,
+                    name: entry.key().clone(),
+                    sm_version,
+                });
+                &*entry.insert(func)
+            }
+        })
+    }
+}
+
+impl ZludaObject for Module {
+    const COOKIE: usize = 0xe9138bd040487d4a;
+
+    type Error = CUerror;
+    type CudaHandle = CUmodule;
+
+    fn drop_checked(&mut self) -> CUresult {
+        unsafe { hipModuleUnload(self.base) }?;
+        Ok(())
+    }
+}
+
+impl Module {
+    pub(crate) fn new(base: hipModule_t, sm_version: u32) -> Self {
+        Self {
+            base,
+            sm_version,
+            mutable: Mutex::new(ModuleMutable {
+                functions: FxHashMap::default(),
+            }),
+        }
+    }
+
+    pub(crate) fn get_function<'a>(&'a self, name: &CStr) -> Result<&'static Function, CUerror> {
+        let mut mutable = self.mutable.lock().map_err(|_| CUerror::UNKNOWN)?;
+        mutable
+            .get_function(self.base, self.sm_version, name.to_owned())
+            .map(|f| unsafe { (f as *const Function).as_ref().unwrap() })
+    }
+}
+
+fn get_best_ptx_and_compile(
+    global_state: &GlobalState,
+    image: CodeLibraryRef<'_>,
+) -> Result<(hipModule_t, u32), CUerror> {
+    let mut ptx_modules = Vec::new();
+    unsafe {
+        CodeLibraryRef::iterate_modules(image, |_, module| match module {
+            Ok(CodeModuleRef::Text(ptx)) => {
+                ptx_modules.push(Cow::Borrowed(ptx));
+            }
+            Ok(CodeModuleRef::File(file)) => {
+                if file.header.kind != FatbinFileHeader::HEADER_KIND_PTX {
+                    return;
+                }
+                if let Ok(text) = file.get_or_decompress_content() {
+                    if let Some(text) = cow_bytes_to_str(text) {
+                        ptx_modules.push(text);
+                    }
+                }
+            }
+            _ => {}
+        })
+    };
+    if let Some(blocked_substring) = debug::blocked_module_substring() {
+        if ptx_modules
+            .iter()
+            .any(|src| src.as_ref().contains(blocked_substring))
+        {
+            debug::log_launch(format_args!(
+                "phase=module_blocked reason=ptx_substring_match pattern={} ptx_modules={}",
+                blocked_substring,
+                ptx_modules.len(),
+            ));
+            return Err(CUerror::NO_BINARY_FOR_GPU);
+        }
+    }
+    let maybe_module = ptx_modules
+        .iter()
+        .rev() // TODO: actually sort by SM
+        .try_fold(
+            None,
+            |acc: Option<(&Cow<'_, str>, ptx_parser::Module<'_>)>, src| {
+                let maybe_ast = if cfg!(debug_assertions) {
+                    ptx_parser::parse_module_checked(src)
+                } else {
+                    Ok(ptx_parser::parse_module_unchecked(src))
+                };
+                match maybe_ast {
+                    Err(_) => ControlFlow::Continue(acc),
+                    Ok(ast) => {
+                        if ast.invalid_directives == 0 {
+                            return ControlFlow::Break((src, ast));
+                        } else {
+                            ControlFlow::Continue(Some(match acc {
+                                Some(best_known) => {
+                                    if ast.invalid_directives < best_known.1.invalid_directives {
+                                        (src, ast)
+                                    } else {
+                                        best_known
+                                    }
+                                }
+                                None => (src, ast),
+                            }))
+                        }
+                    }
+                }
+            },
+        );
+    let (text, module) = match maybe_module {
+        ControlFlow::Break((ast, module)) | ControlFlow::Continue(Some((ast, module))) => {
+            (Some(ast), module)
+        }
+        ControlFlow::Continue(None) => {
+            if cfg!(debug_assertions) {
+                return Err(CUerror::NO_BINARY_FOR_GPU);
+            }
+            (
+                None,
+                ptx_parser::Module {
+                    ptx_version: (1, 0),
+                    sm_version: 0,
+                    directives: Vec::new(),
+                    invalid_directives: usize::MAX,
+                },
+            )
+        }
+    };
+    // TODO: get this information on initialization
+    let hip_properties = get_hip_properties()?;
+    let gcn_arch = get_gcn_arch(&hip_properties)?;
+    let attributes = ExtraCacheAttributes {
+        clock_rate: hip_properties.clockRate as u32,
+        is_debug: cfg!(debug_assertions),
+    };
+    let mut cache_with_key = match (text, global_state.cache_path.as_ref()) {
+        (Some(text), Some(p)) => (|| {
+            let cache = zluda_cache::ModuleCache::open(p)?;
+            let key = get_cache_key(gcn_arch, &text, &attributes)?;
+            Some((cache, key))
+        })(),
+        _ => None,
+    };
+    let cached_binary = load_cached_binary(&mut cache_with_key);
+    let (elf_module, sm_version) = cached_binary
+        .ok_or(CUerror::UNKNOWN)
+        .or_else(|_| compile_and_cache(gcn_arch, attributes, module, &mut cache_with_key))?;
+    let mut hip_module = unsafe { mem::zeroed() };
+    unsafe { hipModuleLoadData(&mut hip_module, elf_module.as_ptr().cast()) }?;
+    Ok((hip_module, sm_version))
+}
+
+fn cow_bytes_to_str<'a>(data: Cow<'a, [u8]>) -> Option<Cow<'a, str>> {
+    match data {
+        Cow::Borrowed(bytes) => std::str::from_utf8(bytes).map(Cow::Borrowed).ok(),
+        Cow::Owned(bytes) => String::from_utf8(bytes).map(Cow::Owned).ok(),
+    }
+}
+
+pub(crate) fn load_hip_module(library: CodeLibraryRef) -> Result<(hipModule_t, u32), CUerror> {
+    let global_state = driver::global_state()?;
+    get_best_ptx_and_compile(global_state, library)
+}
+
+#[derive(serde::Serialize)]
+struct ExtraCacheAttributes {
+    is_debug: bool,
+    clock_rate: u32,
+}
+
+fn get_hip_properties<'a>() -> Result<hipDeviceProp_tR0600, CUerror> {
+    let hip_dev = super::context::get_current_device()?;
+    let mut props = unsafe { mem::zeroed() };
+    unsafe { hipGetDevicePropertiesR0600(&mut props, hip_dev) }?;
+    Ok(props)
+}
+
+fn get_gcn_arch<'a>(props: &'a hipDeviceProp_tR0600) -> Result<&'a str, CUerror> {
+    let gcn_arch = unsafe { CStr::from_ptr(props.gcnArchName.as_ptr()) };
+    gcn_arch.to_str().map_err(|_| CUerror::UNKNOWN)
+}
+
+fn get_cache_key<'a, 'b>(
+    isa: &'a str,
+    text: &str,
+    attributes: &impl serde::Serialize,
+) -> Option<zluda_cache::ModuleKey<'a>> {
+    // Serialization here is deterministic. When marking a type with
+    // #[derive(serde::Serialize)] the derived implementation will just write
+    // fields in the order of their declaration. It's not explictly guaranteed
+    // by serde, but it is the only sensible thing to do, so I feel safe
+    // to rely on it
+    let serialized_attributes = serde_json::to_string(attributes).ok()?;
+    Some(zluda_cache::ModuleKey {
+        hash: blake3::hash(text.as_bytes()).to_hex(),
+        compiler_version: "builtin",
+        zluda_version: env!("VERGEN_GIT_SHA"),
+        device: isa,
+        backend_key: serialized_attributes,
+        last_access: zluda_cache::ModuleCache::time_now(),
+    })
+}
+
+fn load_cached_binary(
+    cache_with_key: &mut Option<(zluda_cache::ModuleCache, zluda_cache::ModuleKey)>,
+) -> Option<(Vec<u8>, u32)> {
+    let binary = cache_with_key
+        .as_mut()
+        .and_then(|(c, key)| c.get_module_binary(key))?;
+    let sm_version = kernel_metadata::KernelMetadataV1::read_object(&binary)?.sm_version;
+    Some((binary, sm_version))
+}
+
+fn compile_and_cache(
+    gcn_arch: &str,
+    attributes: ExtraCacheAttributes,
+    ast: ptx_parser::Module,
+    cache_with_key: &mut Option<(zluda_cache::ModuleCache, zluda_cache::ModuleKey)>,
+) -> Result<(Vec<u8>, u32), CUerror> {
+    let llvm_module = ptx::to_llvm_module(
+        ast,
+        ptx::Attributes {
+            clock_rate: attributes.clock_rate,
+        },
+        |_| {},
+    )
+    .map_err(|_| CUerror::UNKNOWN)?;
+    let ptx_impl = llvm_module.linked_bitcode();
+    let sm_version = llvm_module.metadata.sm_version;
+    let elf_module = llvm_zluda::compile(
+        &llvm_module.context,
+        gcn_arch,
+        llvm_module.llvm_ir,
+        ptx_impl,
+        llvm_module.attributes_ir,
+        llvm_module.metadata,
+        None,
+    )
+    .map_err(|_| CUerror::UNKNOWN)?;
+    if let Some((cache, key)) = cache_with_key {
+        key.last_access = zluda_cache::ModuleCache::time_now();
+        cache.insert_module(key, &elf_module);
+    }
+    Ok((elf_module, sm_version))
+}
+
+pub(crate) fn load(module: &mut CUmodule, fname: &CStr) -> CUresult {
+    let mut image = fs::read(fname.to_str().map_err(|_| CUerror::INVALID_VALUE)?)
+        .map_err(|_| CUerror::INVALID_VALUE)?;
+    // Null-terminate the image, in case it's text
+    image.push(0);
+    let library = unsafe { CodeLibraryRef::try_load(image.as_ptr() as *const std::ffi::c_void) }
+        .map_err(|_| CUerror::NO_BINARY_FOR_GPU)?;
+    let (hip_module, sm_version) = load_hip_module(library)?;
+    *module = Module::new(hip_module, sm_version).wrap();
+    Ok(())
+}
+
+pub(crate) fn load_data(module: &mut CUmodule, image: &std::ffi::c_void) -> CUresult {
+    let library = unsafe { CodeLibraryRef::try_load(image) }.map_err(|_| {
+        debug::log_launch(format_args!(
+            "phase=module_load_data_failure reason=try_load image={:p} result={:?}",
+            image,
+            CUerror::NO_BINARY_FOR_GPU
+        ));
+        CUerror::NO_BINARY_FOR_GPU
+    })?;
+    let library_kind = library_kind_name(library);
+    let library_summary = summarize_library(library);
+    debug::log_launch(format_args!(
+        "phase=module_load_data_enter image={:p} library_kind={} {}",
+        image, library_kind, library_summary
+    ));
+    let (hip_module, sm_version) = load_hip_module(library).map_err(|err| {
+        debug::log_launch(format_args!(
+            "phase=module_load_data_failure image={:p} library_kind={} {} result={:?}",
+            image, library_kind, library_summary, err
+        ));
+        err
+    })?;
+    *module = Module::new(hip_module, sm_version).wrap();
+    debug::log_launch(format_args!(
+        "phase=module_load_data_return image={:p} library_kind={} sm_version={} module={:?}",
+        image, library_kind, sm_version, module.0
+    ));
+    Ok(())
+}
+
+pub(crate) fn load_data_ex(
+    module: &mut CUmodule,
+    image: &std::ffi::c_void,
+    _num_options: ::std::os::raw::c_uint,
+    _options: Option<&mut CUjit_option_enum>,
+    _option_values: Option<&mut *mut ::core::ffi::c_void>,
+) -> CUresult {
+    load_data(module, image)
+}
+
+pub(crate) fn unload(hmod: CUmodule) -> CUresult {
+    zluda_common::drop_checked::<Module>(hmod)
+}
+
+pub(crate) fn get_function(
+    hfunc: &mut &function::Function,
+    module: &Module,
+    name: &CStr,
+) -> CUresult {
+    *hfunc = module.get_function(name)?;
+    Ok(())
+}
+
+pub(crate) fn get_global_v2(
+    dptr: *mut hipDeviceptr_t,
+    bytes: *mut usize,
+    hmod: &Module,
+    name: *const ::core::ffi::c_char,
+) -> hipError_t {
+    unsafe { hipModuleGetGlobal(dptr, bytes, hmod.base, name) }
+}
+
+pub(crate) fn get_loading_mode(mode: &mut cuda_types::cuda::CUmoduleLoadingMode) -> CUresult {
+    *mode = cuda_types::cuda::CUmoduleLoadingMode::CU_MODULE_LAZY_LOADING;
+    Ok(())
+}
+
+pub(crate) fn load_fat_binary(module: &mut CUmodule, image: &std::ffi::c_void) -> CUresult {
+    load_data(module, image)
+}

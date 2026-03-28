@@ -1,0 +1,17 @@
+[package]
+name = "zluda_common"
+version = "0.1.0"
+authors = ["Violet <c01368481@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+cuda_types = { path = "../cuda_types" }
+hip_runtime-sys = { path = "../ext/hip_runtime-sys" }
+rocblas-sys = { path = "../ext/rocblas-sys" }
+hipblaslt-sys = { path = "../ext/hipblaslt-sys" }
+miopen-sys = { path = "../ext/miopen-sys" }
+rocsparse-sys = { path = "../ext/rocsparse-sys" }
+dark_api = { path = "../dark_api" }
+
+[target.'cfg(windows)'.dependencies]
+zluda_windows = { path = "../zluda_windows" }

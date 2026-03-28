@@ -1,0 +1,7 @@
+target/
+Cargo.lock
+
+.vscode/
+.idea/
+
+ptx/lib/zluda_ptx_impl.ll
