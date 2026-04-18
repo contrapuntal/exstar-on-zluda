@@ -271,6 +271,24 @@ type OffsetTraceFn = unsafe extern "system" fn(
     *mut c_void,
     *mut c_void,
 ) -> usize;
+
+/// A Detours hook anchor that is validated by a byte-signature before attachment.
+///
+/// `rva` is the expected offset of a function prologue inside a module. `sig`
+/// is a short slice of bytes we expect to find at that offset — typically 16
+/// bytes of MSVC x64 prologue. If the bytes at `handle + rva` don't match
+/// `sig`, `try_attach_offset` logs `offset_sig_mismatch` and refuses to patch.
+///
+/// `T` is the function pointer type stored in `slot`; in practice this is
+/// `OffsetTraceFn` for tables of generic probes, or a more specific fn type
+/// for individual hooks used via chained `try_attach_offset` calls.
+struct OffsetProbe<T: 'static> {
+    label: &'static str,
+    rva: usize,
+    sig: &'static [u8],
+    slot: *mut Option<T>,
+    detour: *mut c_void,
+}
 type ShowWindowFn = unsafe extern "system" fn(HWND, i32) -> BOOL;
 type SetWindowPosFn = unsafe extern "system" fn(HWND, HWND, i32, i32, i32, i32, u32) -> BOOL;
 type DestroyWindowFn = unsafe extern "system" fn(HWND) -> BOOL;
