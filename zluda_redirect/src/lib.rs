@@ -357,8 +357,6 @@ static mut SN3DBOX_UI_SET_QML_ITEM: Option<Sn3DUICppSetQmlItem> = None;
 static mut SN3DBOX_UI_START: Option<Sn3DUICppStartStop> = None;
 static mut SN3DBOX_UI_STOP: Option<Sn3DUICppStartStop> = None;
 static mut APPUI_HANDLE_SHOW_PASSPORT: Option<OffsetTraceFn> = None;
-static mut APPUI_START_PASSPORT_PROCESS: Option<OffsetTraceFn> = None;
-static mut APPUI_HANDLE_PASSPORT_DATA: Option<OffsetTraceFn> = None;
 static mut PASSPORT_HANDLE_SHOW_PASSPORT_CMD: Option<OffsetTraceFn> = None;
 static mut PASSPORT_HANDLE_LOGIN_SUCCESS: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_6940: Option<OffsetTraceFn> = None;
@@ -5112,7 +5110,7 @@ unsafe extern "system" fn zluda_appui_handle_show_passport(
 ) -> usize {
     log_offset_probe(
         "appui",
-        "handleShowPassport@0x4dcf6",
+        "handleShowPassport@0x4dd96",
         this,
         arg1,
         arg2,
@@ -5121,52 +5119,6 @@ unsafe extern "system" fn zluda_appui_handle_show_passport(
         arg5,
     );
     APPUI_HANDLE_SHOW_PASSPORT
-        .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
-        .unwrap_or(0)
-}
-
-unsafe extern "system" fn zluda_appui_start_passport_process(
-    this: *mut c_void,
-    arg1: *mut c_void,
-    arg2: *mut c_void,
-    arg3: *mut c_void,
-    arg4: *mut c_void,
-    arg5: *mut c_void,
-) -> usize {
-    log_offset_probe(
-        "appui",
-        "startPassportProcess@0x6e0de",
-        this,
-        arg1,
-        arg2,
-        arg3,
-        arg4,
-        arg5,
-    );
-    APPUI_START_PASSPORT_PROCESS
-        .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
-        .unwrap_or(0)
-}
-
-unsafe extern "system" fn zluda_appui_handle_passport_data(
-    this: *mut c_void,
-    arg1: *mut c_void,
-    arg2: *mut c_void,
-    arg3: *mut c_void,
-    arg4: *mut c_void,
-    arg5: *mut c_void,
-) -> usize {
-    log_offset_probe(
-        "appui",
-        "handlePassportData@0x6e8a0",
-        this,
-        arg1,
-        arg2,
-        arg3,
-        arg4,
-        arg5,
-    );
-    APPUI_HANDLE_PASSPORT_DATA
         .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
         .unwrap_or(0)
 }
@@ -7214,25 +7166,14 @@ unsafe fn detour_exstar_appui(handle: *mut c_void) -> Option<()> {
     }
     let probes = [
         (
-            "handleShowPassport",
-            0x4DCF6usize,
-            &[] as &[u8],
+            "handleShowPassport_4dd96",
+            0x4DD96usize,
+            &[
+                0x41u8, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8b, 0xec, 0x48, 0x83, 0xec, 0x70, 0x48, 0xc7, 0x45,
+                0xc0, 0xfe, 0xff, 0xff, 0xff, 0x48, 0x89, 0x58, 0x08, 0x48, 0x89, 0x70, 0x18, 0x48, 0x89, 0x78,
+            ] as &[u8],
             &raw mut APPUI_HANDLE_SHOW_PASSPORT,
             zluda_appui_handle_show_passport as *mut c_void,
-        ),
-        (
-            "startPassportProcess",
-            0x6E0DEusize,
-            &[] as &[u8],
-            &raw mut APPUI_START_PASSPORT_PROCESS,
-            zluda_appui_start_passport_process as *mut c_void,
-        ),
-        (
-            "handlePassportData",
-            0x6E8A0usize,
-            &[] as &[u8],
-            &raw mut APPUI_HANDLE_PASSPORT_DATA,
-            zluda_appui_handle_passport_data as *mut c_void,
         ),
     ];
     let mut attached_any = false;
