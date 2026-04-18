@@ -373,6 +373,11 @@ static mut EXSTAR_EXE_F0F8: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_F9EC: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_FAC4: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_F6C0: Option<OffsetTraceFn> = None;
+// Probe entry temporarily removed — the original function at 0x10390 is gone in
+// EXStar Hub v1.1.1-8 and we don't yet know whether the compat hook is still
+// needed. See docs/superpowers/specs/2026-04-17-exstar-hub-v1.1.1-8-signature-validation-design.md
+// "Test plan -> Secondary: child Hub GUI" for the empirical gating decision.
+#[allow(dead_code)]
 static mut EXSTAR_EXE_10390: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_A6E0: Option<OffsetTraceFn> = None;
 
@@ -5772,6 +5777,7 @@ unsafe extern "system" fn zluda_exstar_exe_f6c0(
     result
 }
 
+#[allow(dead_code)]
 unsafe extern "system" fn zluda_exstar_exe_10390(
     this: *mut c_void,
     arg1: *mut c_void,
@@ -7230,63 +7236,56 @@ unsafe fn detour_exstar_exe(handle: *mut c_void) -> Option<()> {
         (
             "entry_6940",
             0x6940usize,
-            &[] as &[u8],
+            &[0x48u8, 0x8b, 0xc4, 0x57, 0x48, 0x81, 0xec, 0xe0, 0x00, 0x00, 0x00, 0x48, 0xc7, 0x44, 0x24, 0x50] as &[u8],
             &raw mut EXSTAR_EXE_6940,
             zluda_exstar_exe_6940 as *mut c_void,
         ),
         (
             "lambda_6dc0",
             0x6DC0usize,
-            &[] as &[u8],
+            &[0x48u8, 0x8b, 0xc4, 0x4c, 0x89, 0x48, 0x20, 0x4c, 0x89, 0x40, 0x18, 0x48, 0x89, 0x50, 0x10, 0x55] as &[u8],
             &raw mut EXSTAR_EXE_6DC0,
             zluda_exstar_exe_6dc0 as *mut c_void,
         ),
         (
-            "signal_slot_bc30",
-            0xBC30usize,
-            &[] as &[u8],
+            "signal_slot_bc60",
+            0xBC60usize,
+            &[0x48u8, 0x89, 0x6c, 0x24, 0x18, 0x56, 0x48, 0x83, 0xec, 0x40, 0x49, 0x8b, 0xe9, 0x48, 0x8b, 0xf2] as &[u8],
             &raw mut EXSTAR_EXE_BC30,
             zluda_exstar_exe_bc30 as *mut c_void,
         ),
         (
-            "entry_f0f8",
-            0xF0F8usize,
-            &[] as &[u8],
+            "entry_f1c4",
+            0xF1C4usize,
+            &[0x48u8, 0x89, 0x5c, 0x24, 0x08, 0x48, 0x89, 0x74, 0x24, 0x10, 0x57, 0x48, 0x83, 0xec, 0x30, 0xb9] as &[u8],
             &raw mut EXSTAR_EXE_F0F8,
             zluda_exstar_exe_f0f8 as *mut c_void,
         ),
         (
-            "wrapper_f9ec",
-            0xF9ECusize,
-            &[] as &[u8],
+            "wrapper_faac",
+            0xFAACusize,
+            &[0x40u8, 0x53, 0x48, 0x83, 0xec, 0x20, 0x8a, 0xd9, 0xe8, 0xdf, 0x11, 0x00, 0x00, 0x33, 0xd2, 0x85] as &[u8],
             &raw mut EXSTAR_EXE_F9EC,
             zluda_exstar_exe_f9ec as *mut c_void,
         ),
         (
-            "wrapper_fac4",
-            0xFAC4usize,
-            &[] as &[u8],
+            "wrapper_fb84",
+            0xFB84usize,
+            &[0x48u8, 0x83, 0xec, 0x28, 0xe8, 0x6f, 0xff, 0xff, 0xff, 0x48, 0xf7, 0xd8, 0x1b, 0xc0, 0xf7, 0xd8] as &[u8],
             &raw mut EXSTAR_EXE_FAC4,
             zluda_exstar_exe_fac4 as *mut c_void,
         ),
         (
-            "init_check_f6c0",
-            0xF6C0usize,
-            &[] as &[u8],
+            "init_check_f780",
+            0xF780usize,
+            &[0x48u8, 0x83, 0xec, 0x28, 0xe8, 0x0f, 0x15, 0x00, 0x00, 0x85, 0xc0, 0x74, 0x21, 0x65, 0x48, 0x8b] as &[u8],
             &raw mut EXSTAR_EXE_F6C0,
             zluda_exstar_exe_f6c0 as *mut c_void,
         ),
         (
-            "post_d070_check_10390",
-            0x10390usize,
-            &[] as &[u8],
-            &raw mut EXSTAR_EXE_10390,
-            zluda_exstar_exe_10390 as *mut c_void,
-        ),
-        (
             "guard_a6e0",
             0xA6E0usize,
-            &[] as &[u8],
+            &[0x40u8, 0x55, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24, 0x10, 0xee] as &[u8],
             &raw mut EXSTAR_EXE_A6E0,
             zluda_exstar_exe_a6e0 as *mut c_void,
         ),
