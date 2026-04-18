@@ -6510,11 +6510,13 @@ unsafe fn try_attach_offset<T>(
     kind: &str,
     label: &str,
     rva: usize,
+    sig: &[u8],
     slot: *mut Option<T>,
     detour: *mut c_void,
 ) -> bool {
     let address = (handle as usize).saturating_add(rva) as *const c_void;
-    if !memory_readable(address, 16) {
+    let check_len = sig.len().max(16);
+    if !memory_readable(address, check_len) {
         log_exstar_host(format_args!(
             "kind={} hook=offset_unreadable label={} address={}",
             kind,
@@ -6522,6 +6524,20 @@ unsafe fn try_attach_offset<T>(
             describe_address(address)
         ));
         return false;
+    }
+    if !sig.is_empty() {
+        let actual = slice::from_raw_parts(address as *const u8, sig.len());
+        if actual != sig {
+            log_exstar_host(format_args!(
+                "kind={} hook=offset_sig_mismatch label={} address={} expected={:02x?} actual={:02x?}",
+                kind,
+                label,
+                describe_address(address),
+                sig,
+                actual
+            ));
+            return false;
+        }
     }
     *slot = Some(mem::transmute_copy(&address));
     if DetourAttach(slot.cast(), detour) != NO_ERROR as i32 {
@@ -6651,6 +6667,7 @@ unsafe fn detour_exstar_process_mg(handle: *mut c_void) -> Option<()> {
         "processmg_connect",
         "connectImpl_wrapper@0x6d60",
         0x6D60usize,
+        &[],
         &raw mut PROCESS_MG_PLUGIN_CONNECT_IMPL_WRAPPER_6D60,
         zluda_process_mg_plugin_connect_impl_wrapper_6d60 as _,
     ) && try_attach_offset(
@@ -6658,6 +6675,7 @@ unsafe fn detour_exstar_process_mg(handle: *mut c_void) -> Option<()> {
         "processmg_connect",
         "plugin_connectToHub@0x72c0",
         0x72C0usize,
+        &[],
         &raw mut PROCESS_MG_PLUGIN_CONNECT_TO_HUB_72C0,
         zluda_process_mg_plugin_connect_to_hub_72c0 as _,
     ) && try_attach_offset(
@@ -6665,6 +6683,7 @@ unsafe fn detour_exstar_process_mg(handle: *mut c_void) -> Option<()> {
         "processmg",
         "connectAndRegister@0x4c50",
         0x4C50usize,
+        &[],
         &raw mut PROCESS_MG_CONNECT_AND_REGISTER,
         zluda_process_mg_connect_and_register as _,
     ) && try_attach_export(
@@ -7197,24 +7216,27 @@ unsafe fn detour_exstar_appui(handle: *mut c_void) -> Option<()> {
         (
             "handleShowPassport",
             0x4DCF6usize,
+            &[] as &[u8],
             &raw mut APPUI_HANDLE_SHOW_PASSPORT,
             zluda_appui_handle_show_passport as *mut c_void,
         ),
         (
             "startPassportProcess",
             0x6E0DEusize,
+            &[] as &[u8],
             &raw mut APPUI_START_PASSPORT_PROCESS,
             zluda_appui_start_passport_process as *mut c_void,
         ),
         (
             "handlePassportData",
             0x6E8A0usize,
+            &[] as &[u8],
             &raw mut APPUI_HANDLE_PASSPORT_DATA,
             zluda_appui_handle_passport_data as *mut c_void,
         ),
     ];
     let mut attached_any = false;
-    for (label, rva, slot, detour) in probes {
+    for (label, rva, sig, slot, detour) in probes {
         if DetourTransactionBegin() != NO_ERROR as i32 {
             log_exstar_host(format_args!(
                 "kind=appui hook=begin_failed label={} handle={:p}",
@@ -7230,7 +7252,7 @@ unsafe fn detour_exstar_appui(handle: *mut c_void) -> Option<()> {
             DetourTransactionAbort();
             continue;
         }
-        if !try_attach_offset(handle, "appui", label, rva, slot, detour) {
+        if !try_attach_offset(handle, "appui", label, rva, sig, slot, detour) {
             DetourTransactionAbort();
             continue;
         }
@@ -7264,18 +7286,20 @@ unsafe fn detour_exstar_passport(handle: *mut c_void) -> Option<()> {
         (
             "handleShowPassportCmd",
             0x3BFC1usize,
+            &[] as &[u8],
             &raw mut PASSPORT_HANDLE_SHOW_PASSPORT_CMD,
             zluda_passport_handle_show_passport_cmd as *mut c_void,
         ),
         (
             "handleLoginSuccess",
             0x39ED0usize,
+            &[] as &[u8],
             &raw mut PASSPORT_HANDLE_LOGIN_SUCCESS,
             zluda_passport_handle_login_success as *mut c_void,
         ),
     ];
     let mut attached_any = false;
-    for (label, rva, slot, detour) in probes {
+    for (label, rva, sig, slot, detour) in probes {
         if DetourTransactionBegin() != NO_ERROR as i32 {
             log_exstar_host(format_args!(
                 "kind=passport hook=begin_failed label={} handle={:p}",
@@ -7291,7 +7315,7 @@ unsafe fn detour_exstar_passport(handle: *mut c_void) -> Option<()> {
             DetourTransactionAbort();
             continue;
         }
-        if !try_attach_offset(handle, "passport", label, rva, slot, detour) {
+        if !try_attach_offset(handle, "passport", label, rva, sig, slot, detour) {
             DetourTransactionAbort();
             continue;
         }
@@ -7325,78 +7349,90 @@ unsafe fn detour_exstar_exe(handle: *mut c_void) -> Option<()> {
         (
             "entry_6940",
             0x6940usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_6940,
             zluda_exstar_exe_6940 as *mut c_void,
         ),
         (
             "lambda_6dc0",
             0x6DC0usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_6DC0,
             zluda_exstar_exe_6dc0 as *mut c_void,
         ),
         (
             "signal_slot_bc30",
             0xBC30usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_BC30,
             zluda_exstar_exe_bc30 as *mut c_void,
         ),
         (
             "entry_d070",
             0xD070usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_D070,
             zluda_exstar_exe_d070 as *mut c_void,
         ),
         (
             "entry_f0f8",
             0xF0F8usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_F0F8,
             zluda_exstar_exe_f0f8 as *mut c_void,
         ),
         (
             "wrapper_f9ec",
             0xF9ECusize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_F9EC,
             zluda_exstar_exe_f9ec as *mut c_void,
         ),
         (
             "wrapper_fa3c",
             0xFA3Cusize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_FA3C,
             zluda_exstar_exe_fa3c as *mut c_void,
         ),
         (
             "wrapper_fac4",
             0xFAC4usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_FAC4,
             zluda_exstar_exe_fac4 as *mut c_void,
         ),
         (
             "init_gate_f82c",
             0xF82Cusize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_F82C,
             zluda_exstar_exe_f82c as *mut c_void,
         ),
         (
             "init_check_f6c0",
             0xF6C0usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_F6C0,
             zluda_exstar_exe_f6c0 as *mut c_void,
         ),
         (
             "post_d070_check_10390",
             0x10390usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_10390,
             zluda_exstar_exe_10390 as *mut c_void,
         ),
         (
             "guard_a6e0",
             0xA6E0usize,
+            &[] as &[u8],
             &raw mut EXSTAR_EXE_A6E0,
             zluda_exstar_exe_a6e0 as *mut c_void,
         ),
     ];
     let mut attached_any = false;
-    for (label, rva, slot, detour) in probes {
+    for (label, rva, sig, slot, detour) in probes {
         if DetourTransactionBegin() != NO_ERROR as i32 {
             log_exstar_host(format_args!(
                 "kind=exe hook=begin_failed label={} handle={:p}",
@@ -7412,7 +7448,7 @@ unsafe fn detour_exstar_exe(handle: *mut c_void) -> Option<()> {
             DetourTransactionAbort();
             continue;
         }
-        if !try_attach_offset(handle, "exe", label, rva, slot, detour) {
+        if !try_attach_offset(handle, "exe", label, rva, sig, slot, detour) {
             DetourTransactionAbort();
             continue;
         }
@@ -7452,19 +7488,21 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     let host_trace_enabled = exstar_host_trace_enabled();
     let light_trace_enabled = exstar_light_trace_enabled();
     let keep_second_sweep_hooks = exstar_manager_skip_second_sweep_enabled() || light_trace_enabled;
-    let mut probes: Vec<(&'static str, usize, *mut Option<OffsetTraceFn>, *mut c_void)> =
+    let mut probes: Vec<(&'static str, usize, &'static [u8], *mut Option<OffsetTraceFn>, *mut c_void)> =
         Vec::new();
     if host_trace_enabled || keep_second_sweep_hooks {
         probes.extend([
             (
                 "kill_all_e1a0",
                 0xE1A0usize,
+                &[] as &[u8],
                 &raw mut PROCESS_MANAGER_EXE_KILL_ALL_E1A0,
                 zluda_process_manager_exe_kill_all_e1a0 as *mut c_void,
             ),
             (
                 "load_config_ef30",
                 0xEF30usize,
+                &[] as &[u8],
                 &raw mut PROCESS_MANAGER_EXE_LOAD_CONFIG_EF30,
                 zluda_process_manager_exe_load_config_ef30 as *mut c_void,
             ),
@@ -7473,6 +7511,7 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     probes.push((
         "kill_one_e560",
         0xE560usize,
+        &[] as &[u8],
         &raw mut PROCESS_MANAGER_EXE_KILL_ONE_E560,
         zluda_process_manager_exe_kill_one_e560 as *mut c_void,
     ));
@@ -7483,6 +7522,7 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     probes.push((
         "env_detect_5e30",
         0x5E30usize,
+        &[] as &[u8],
         &raw mut PROCESS_MANAGER_CHECK_OPENGL,
         zluda_process_manager_check_opengl as *mut c_void,
     ));
@@ -7490,12 +7530,13 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
         probes.push((
             "launch_f5f0",
             0xF5F0usize,
+            &[] as &[u8],
             &raw mut PROCESS_MANAGER_EXE_F5F0,
             zluda_process_manager_exe_f5f0 as *mut c_void,
         ));
     }
     let mut attached_any = false;
-    for (label, rva, slot, detour) in probes {
+    for (label, rva, sig, slot, detour) in probes {
         if DetourTransactionBegin() != NO_ERROR as i32 {
             log_exstar_host(format_args!(
                 "kind=manager_exe hook=begin_failed label={} handle={:p}",
@@ -7511,7 +7552,7 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
             DetourTransactionAbort();
             continue;
         }
-        if !try_attach_offset(handle, "manager_exe", label, rva, slot, detour) {
+        if !try_attach_offset(handle, "manager_exe", label, rva, sig, slot, detour) {
             DetourTransactionAbort();
             continue;
         }
@@ -7555,6 +7596,7 @@ unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
         (
             "entry_6a40",
             0x6A40usize,
+            &[] as &[u8],
             &raw mut SCANSERVICE_EXE_ENTRY_6A40,
             zluda_scanservice_exe_entry_6a40 as *mut c_void,
         ),
@@ -7563,13 +7605,13 @@ unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
         // The corrupted code prevented connectAndRegister from ever being reached.
     ];
     let mut attached_any = false;
-    for (label, rva, slot, detour) in probes {
+    for (label, rva, sig, slot, detour) in probes {
         if DetourTransactionBegin() != NO_ERROR as i32 { continue; }
         if DetourUpdateThread(GetCurrentThread().0) != NO_ERROR as i32 {
             DetourTransactionAbort();
             continue;
         }
-        if !try_attach_offset(handle, "scanservice", label, rva, slot, detour) {
+        if !try_attach_offset(handle, "scanservice", label, rva, sig, slot, detour) {
             DetourTransactionAbort();
             continue;
         }
