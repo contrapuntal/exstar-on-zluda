@@ -162,7 +162,6 @@ static EXSTAR_UI_TOPIC_QTTUNNEL_PUBLISHED_BACKTRACE_EMITTED: AtomicBool = Atomic
 static EXSTAR_MANAGER_WAIT_MUTANT_BACKTRACE_EMITTED: AtomicBool = AtomicBool::new(false);
 static EXSTAR_MANAGER_WAIT_FAILED_PROCESS_BACKTRACE_EMITTED: AtomicBool = AtomicBool::new(false);
 static EXSTAR_EXE_6940_BACKTRACE_EMITTED: AtomicBool = AtomicBool::new(false);
-static EXSTAR_EXE_D070_BACKTRACE_EMITTED: AtomicBool = AtomicBool::new(false);
 static EXSTAR_EXE_F0F8_BACKTRACE_EMITTED: AtomicBool = AtomicBool::new(false);
 static EXSTAR_CHILD_HUB_THREAD_EXIT_BACKTRACE_EMITTED: AtomicBool = AtomicBool::new(false);
 static EXSTAR_CHILD_HUB_FORCED_EXEC_ATTEMPTED: AtomicBool = AtomicBool::new(false);
@@ -370,12 +369,9 @@ static mut SCANSERVICE_CONNECT_AND_REGISTER_ORIGINAL: Option<
 > = None;
 static mut EXSTAR_EXE_6DC0: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_BC30: Option<OffsetTraceFn> = None;
-static mut EXSTAR_EXE_D070: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_F0F8: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_F9EC: Option<OffsetTraceFn> = None;
-static mut EXSTAR_EXE_FA3C: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_FAC4: Option<OffsetTraceFn> = None;
-static mut EXSTAR_EXE_F82C: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_F6C0: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_10390: Option<OffsetTraceFn> = None;
 static mut EXSTAR_EXE_A6E0: Option<OffsetTraceFn> = None;
@@ -5713,28 +5709,6 @@ unsafe extern "system" fn zluda_exstar_exe_bc30(
         .unwrap_or(0)
 }
 
-unsafe extern "system" fn zluda_exstar_exe_d070(
-    this: *mut c_void,
-    arg1: *mut c_void,
-    arg2: *mut c_void,
-    arg3: *mut c_void,
-    arg4: *mut c_void,
-    arg5: *mut c_void,
-) -> usize {
-    maybe_log_exe_entry_backtrace(
-        &EXSTAR_EXE_D070_BACKTRACE_EMITTED,
-        "entry@0xd070",
-        this,
-        arg1,
-        arg2,
-        arg3,
-        false,
-    );
-    EXSTAR_EXE_D070
-        .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
-        .unwrap_or(0)
-}
-
 unsafe extern "system" fn zluda_exstar_exe_f0f8(
     this: *mut c_void,
     arg1: *mut c_void,
@@ -5765,20 +5739,6 @@ unsafe extern "system" fn zluda_exstar_exe_f0f8(
         .unwrap_or(0)
 }
 
-unsafe extern "system" fn zluda_exstar_exe_fa3c(
-    this: *mut c_void,
-    arg1: *mut c_void,
-    arg2: *mut c_void,
-    arg3: *mut c_void,
-    arg4: *mut c_void,
-    arg5: *mut c_void,
-) -> usize {
-    log_offset_probe("exe", "wrapper@0xfa3c", this, arg1, arg2, arg3, arg4, arg5);
-    EXSTAR_EXE_FA3C
-        .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
-        .unwrap_or(0)
-}
-
 unsafe extern "system" fn zluda_exstar_exe_fac4(
     this: *mut c_void,
     arg1: *mut c_void,
@@ -5791,26 +5751,6 @@ unsafe extern "system" fn zluda_exstar_exe_fac4(
     EXSTAR_EXE_FAC4
         .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
         .unwrap_or(0)
-}
-
-unsafe extern "system" fn zluda_exstar_exe_f82c(
-    this: *mut c_void,
-    arg1: *mut c_void,
-    arg2: *mut c_void,
-    arg3: *mut c_void,
-    arg4: *mut c_void,
-    arg5: *mut c_void,
-) -> usize {
-    let result = EXSTAR_EXE_F82C
-        .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
-        .unwrap_or(0);
-    let is_child_hub = env::args().any(|a| a == "@#$");
-    log_exstar_host(format_args!(
-        "kind=exe method=init_gate@0xf82c result={} is_child_hub={} this={:p}",
-        result, is_child_hub, this
-    ));
-    // init_gate returns 1 (true) for both bootstrap and child Hub — not the blocker
-    result
 }
 
 unsafe extern "system" fn zluda_exstar_exe_f6c0(
@@ -7309,13 +7249,6 @@ unsafe fn detour_exstar_exe(handle: *mut c_void) -> Option<()> {
             zluda_exstar_exe_bc30 as *mut c_void,
         ),
         (
-            "entry_d070",
-            0xD070usize,
-            &[] as &[u8],
-            &raw mut EXSTAR_EXE_D070,
-            zluda_exstar_exe_d070 as *mut c_void,
-        ),
-        (
             "entry_f0f8",
             0xF0F8usize,
             &[] as &[u8],
@@ -7330,25 +7263,11 @@ unsafe fn detour_exstar_exe(handle: *mut c_void) -> Option<()> {
             zluda_exstar_exe_f9ec as *mut c_void,
         ),
         (
-            "wrapper_fa3c",
-            0xFA3Cusize,
-            &[] as &[u8],
-            &raw mut EXSTAR_EXE_FA3C,
-            zluda_exstar_exe_fa3c as *mut c_void,
-        ),
-        (
             "wrapper_fac4",
             0xFAC4usize,
             &[] as &[u8],
             &raw mut EXSTAR_EXE_FAC4,
             zluda_exstar_exe_fac4 as *mut c_void,
-        ),
-        (
-            "init_gate_f82c",
-            0xF82Cusize,
-            &[] as &[u8],
-            &raw mut EXSTAR_EXE_F82C,
-            zluda_exstar_exe_f82c as *mut c_void,
         ),
         (
             "init_check_f6c0",
