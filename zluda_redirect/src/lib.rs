@@ -6667,7 +6667,7 @@ unsafe fn detour_exstar_process_mg(handle: *mut c_void) -> Option<()> {
         "processmg_connect",
         "connectImpl_wrapper@0x6d60",
         0x6D60usize,
-        &[],
+        &[0x48, 0x89, 0x5c, 0x24, 0x10, 0x48, 0x89, 0x6c, 0x24, 0x20, 0x4c, 0x89, 0x44, 0x24, 0x18, 0x56],
         &raw mut PROCESS_MG_PLUGIN_CONNECT_IMPL_WRAPPER_6D60,
         zluda_process_mg_plugin_connect_impl_wrapper_6d60 as _,
     ) && try_attach_offset(
@@ -6675,7 +6675,7 @@ unsafe fn detour_exstar_process_mg(handle: *mut c_void) -> Option<()> {
         "processmg_connect",
         "plugin_connectToHub@0x72c0",
         0x72C0usize,
-        &[],
+        &[0x48, 0x89, 0x54, 0x24, 0x10, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57],
         &raw mut PROCESS_MG_PLUGIN_CONNECT_TO_HUB_72C0,
         zluda_process_mg_plugin_connect_to_hub_72c0 as _,
     ) && try_attach_offset(
@@ -6683,7 +6683,7 @@ unsafe fn detour_exstar_process_mg(handle: *mut c_void) -> Option<()> {
         "processmg",
         "connectAndRegister@0x4c50",
         0x4C50usize,
-        &[],
+        &[0x40, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24],
         &raw mut PROCESS_MG_CONNECT_AND_REGISTER,
         zluda_process_mg_connect_and_register as _,
     ) && try_attach_export(
@@ -7286,14 +7286,14 @@ unsafe fn detour_exstar_passport(handle: *mut c_void) -> Option<()> {
         (
             "handleShowPassportCmd",
             0x3BFC1usize,
-            &[] as &[u8],
+            &[0x48u8, 0x8d, 0x8d, 0xa8, 0x00, 0x00, 0x00, 0xff, 0x15, 0xea, 0xb2, 0x01, 0x00, 0x48, 0x8b, 0xd8][..],
             &raw mut PASSPORT_HANDLE_SHOW_PASSPORT_CMD,
             zluda_passport_handle_show_passport_cmd as *mut c_void,
         ),
         (
             "handleLoginSuccess",
             0x39ED0usize,
-            &[] as &[u8],
+            &[0x40u8, 0x53, 0x48, 0x83, 0xec, 0x50, 0x48, 0xc7, 0x44, 0x24, 0x20, 0xfe, 0xff, 0xff, 0xff, 0x48][..],
             &raw mut PASSPORT_HANDLE_LOGIN_SUCCESS,
             zluda_passport_handle_login_success as *mut c_void,
         ),
@@ -7495,14 +7495,14 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
             (
                 "kill_all_e1a0",
                 0xE1A0usize,
-                &[] as &[u8],
+                &[0x48u8, 0x8b, 0xc4, 0x55, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0x68, 0xa8][..],
                 &raw mut PROCESS_MANAGER_EXE_KILL_ALL_E1A0,
                 zluda_process_manager_exe_kill_all_e1a0 as *mut c_void,
             ),
             (
                 "load_config_ef30",
                 0xEF30usize,
-                &[] as &[u8],
+                &[0x40u8, 0x55, 0x56, 0x57, 0x48, 0x81, 0xec, 0xa0, 0x00, 0x00, 0x00, 0x48, 0xc7, 0x44, 0x24, 0x28][..],
                 &raw mut PROCESS_MANAGER_EXE_LOAD_CONFIG_EF30,
                 zluda_process_manager_exe_load_config_ef30 as *mut c_void,
             ),
@@ -7511,7 +7511,7 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     probes.push((
         "kill_one_e560",
         0xE560usize,
-        &[] as &[u8],
+        &[0x40u8, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24][..],
         &raw mut PROCESS_MANAGER_EXE_KILL_ONE_E560,
         zluda_process_manager_exe_kill_one_e560 as *mut c_void,
     ));
@@ -7522,7 +7522,7 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     probes.push((
         "env_detect_5e30",
         0x5E30usize,
-        &[] as &[u8],
+        &[0x48u8, 0x8b, 0xc4, 0x55, 0x48, 0x8d, 0x68, 0xd8, 0x48, 0x81, 0xec, 0x20, 0x01, 0x00, 0x00, 0x48][..],
         &raw mut PROCESS_MANAGER_CHECK_OPENGL,
         zluda_process_manager_check_opengl as *mut c_void,
     ));
@@ -7530,7 +7530,7 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
         probes.push((
             "launch_f5f0",
             0xF5F0usize,
-            &[] as &[u8],
+            &[0x40u8, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24][..],
             &raw mut PROCESS_MANAGER_EXE_F5F0,
             zluda_process_manager_exe_f5f0 as *mut c_void,
         ));
@@ -7596,7 +7596,7 @@ unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
         (
             "entry_6a40",
             0x6A40usize,
-            &[] as &[u8],
+            &[0x48u8, 0x83, 0xec, 0x28, 0xe8, 0xa3, 0x0a, 0x00, 0x00, 0x48, 0x83, 0xc4, 0x28, 0xe9, 0xfe, 0xfd][..],
             &raw mut SCANSERVICE_EXE_ENTRY_6A40,
             zluda_scanservice_exe_entry_6a40 as *mut c_void,
         ),
