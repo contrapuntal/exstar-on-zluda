@@ -36,13 +36,36 @@ Earlier versions (`v1.1.0.16` and `v1.1.1-8`) were also validated during the
 patch's evolution; see `exstar/docs/EXSTAR_COMPAT_REFERENCE.md` for the
 historical track. Only `v1.1.1-9` is the currently advertised target.
 
-## Quickstart — from source
+## Quickstart
 
-> **Heads-up: this is a challenging install.** Building requires the Rust +
-> MSVC + CMake toolchain, ~20 GB of free disk, and a 15–60 minute first
-> build. This project is currently for users comfortable with Windows native
-> build toolchains. A binary release would lower the bar significantly —
-> none yet exists.
+The fastest path to a working install uses the pre-built release zip — no
+toolchain, no compile, ~30 MB download.
+
+1. Go to the [latest release](https://github.com/contrapuntal/exstar-on-zluda/releases/latest)
+   and download `exstar-on-zluda-v<version>-windows-x64.zip`.
+2. (Optional, recommended) Verify the zip's SHA256 against the value in the
+   release body.
+3. Install Shining3D EXStar Hub separately at
+   `C:\Program Files\Shining3d\EXStar Hub`.
+4. Unzip and run:
+
+   ```cmd
+   launcher\launch_exstar_zluda.cmd
+   ```
+
+The `README.txt` inside the zip restates the disclaimer, limitations, and the
+troubleshooting basics in case you start there instead of here.
+
+## Build from source
+
+Skip this section unless you're contributing or want to verify the published
+binaries against the source yourself. The Quickstart above gets you the same
+binaries pre-compiled.
+
+> **Heads-up: building is a challenging install.** Building requires the
+> Rust + MSVC + CMake toolchain, ~20 GB of free disk, and a 15–60 minute
+> first build. If you only want to *run* EXStar on AMD, use the release zip
+> from Quickstart above.
 
 ### Disk + time budget
 
@@ -77,25 +100,33 @@ cd exstar-on-zluda
 .\run_xtask_debug.cmd
 ```
 
+If you cloned before running `git lfs install`, run `git lfs pull` inside the
+repo to fetch the binary blobs before building.
+
 Re-run `.\run_xtask_debug.cmd` after `git pull` or any source change.
-Day-to-day launches need no rebuild. Cargo's incremental cache makes
+Day-to-day launches need no rebuild — Cargo's incremental cache makes
 subsequent builds fast (seconds to minutes).
 
-### Day-to-day: launch EXStar Hub
+The build produces `target\debug\zluda.exe`, `target\debug\zluda_redirect.dll`,
+and helpers. Once it's done, launch the same way as the binary release:
 
-```powershell
+```cmd
 .\exstar\scripts\launch\launch_exstar_zluda.cmd
 ```
 
-This is the only command you need for everyday use once the repo is built.
+The launcher script finds the binaries relative to the repo root automatically.
 
-(If you cloned before running `git lfs install`, run `git lfs pull` inside the
-repo to fetch the actual binary blobs.)
+### Cutting a release
 
-The build takes 15–60 minutes the first time (matching the *Disk + time budget*
-above) and produces `target\debug\zluda.exe`, `target\debug\zluda_redirect.dll`,
-and helpers. The launcher script finds them relative to the repo root
-automatically.
+For maintainers cutting a public release:
+
+```powershell
+.\run_xtask_release.cmd          # build with --release (smaller, optimized)
+.\package_release.ps1 -Version 0.1.0   # bundle binaries + scripts + README → zip
+git tag -a v0.1.0 -m "..."
+git push origin v0.1.0
+.\release_publish.ps1 -Version 0.1.0   # upload zip to a new GitHub Release via gh CLI
+```
 
 ## Repo layout
 
