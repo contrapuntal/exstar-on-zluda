@@ -70,7 +70,7 @@ $binDir = Join-Path $stagingDir 'bin'
 $launcherDir = Join-Path $stagingDir 'launcher'
 New-Item -ItemType Directory -Path $binDir, $launcherDir | Out-Null
 
-# Binaries — copy every .exe / .dll from target/<profile>/. The launcher only
+# Binaries -- copy every .exe / .dll from target/<profile>/. The launcher only
 # directly invokes zluda.exe + zluda_redirect.dll + nvcuda.dll, but CUDA apps
 # may load additional shims (cuBLAS, cuFFT, etc.) at runtime, so include them
 # all rather than risk a "works on dev, fails on user" surprise.
@@ -80,13 +80,25 @@ foreach ($f in $binFiles) {
 }
 Write-Host "  bin/: $($binFiles.Count) binaries"
 
-# Launcher scripts.
+# Launcher scripts. End users need launch + kill + diagnose; the
+# launch_exstar_stock_* scripts are a developer-only A/B-comparison
+# against unmodified upstream ZLUDA, so we exclude them from the zip.
 $launcherSrc = Join-Path $repoRoot 'exstar\scripts\launch'
-$launcherFiles = @(Get-ChildItem -Path $launcherSrc -File)
-foreach ($f in $launcherFiles) {
-    Copy-Item $f.FullName -Destination $launcherDir
+$launcherInclude = @(
+    'launch_exstar_zluda.cmd',
+    'launch_exstar_zluda.ps1',
+    'launch_exstar_zluda_diagnose.cmd',
+    'kill_exstar_zluda.cmd',
+    'kill_exstar_zluda.ps1'
+)
+foreach ($name in $launcherInclude) {
+    $src = Join-Path $launcherSrc $name
+    if (-not (Test-Path $src)) {
+        throw "Expected launcher file not found: $src"
+    }
+    Copy-Item $src -Destination $launcherDir
 }
-Write-Host "  launcher/: $($launcherFiles.Count) scripts"
+Write-Host "  launcher/: $($launcherInclude.Count) scripts"
 
 # Licenses.
 Copy-Item (Join-Path $repoRoot 'LICENSE-MIT') -Destination $stagingDir
@@ -99,7 +111,7 @@ Copy-Item (Join-Path $repoRoot 'LICENSE-APACHE') -Destination $stagingDir
 # so the launcher uses ZIPPED_BIN_DIR if set, else falls back to source-tree
 # discovery.
 # (For first cut, leave the launcher untouched and document the dependency
-# in README.txt — first release can be "unzip preserving structure".)
+# in README.txt -- first release can be "unzip preserving structure".)
 
 # Generate the end-user README.txt
 $readme = @"
@@ -167,7 +179,14 @@ ZLUDA. Upstream copyright remains with vosen's contributors; EXStar-specific
 patches are under the same dual terms.
 "@
 
-Set-Content -Path (Join-Path $stagingDir 'README.txt') -Value $readme -Encoding UTF8
+# Write README.txt as UTF-8 without BOM. PS5's `Set-Content -Encoding UTF8`
+# prepends a BOM; some plain-text readers display it as visible junk and
+# gh-style downstream tools occasionally choke on it.
+[System.IO.File]::WriteAllText(
+    (Join-Path $stagingDir 'README.txt'),
+    $readme,
+    (New-Object System.Text.UTF8Encoding $false)
+)
 
 # Build the zip.
 if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
@@ -176,7 +195,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
     $stagingDir,
     $zipPath,
     [System.IO.Compression.CompressionLevel]::Optimal,
-    $false   # include base directory: false → contents go at zip root
+    $false   # include base directory: false -> contents go at zip root
 )
 
 # Hash for the GitHub Release body.
@@ -198,7 +217,7 @@ Write-Host "Suggested GitHub Release body (paste into the description):"
 Write-Host "----------------------------------------------------------------"
 Write-Host "## Downloads"
 Write-Host ""
-Write-Host ('- `{0}` — Windows x64' -f $zipName)
+Write-Host ('- `{0}` -- Windows x64' -f $zipName)
 Write-Host ('  - SHA256: `{0}`' -f $hash)
 Write-Host ('  - Built from commit `{0}`' -f $gitShaShort)
 Write-Host ""

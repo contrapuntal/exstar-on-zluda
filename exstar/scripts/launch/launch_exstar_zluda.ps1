@@ -4,9 +4,30 @@ param(
 
 $ErrorActionPreference = 'Continue'
 
-$exstarRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
-$repoRoot = (Resolve-Path "$exstarRoot\..").Path
-$zludaDir = Join-Path $repoRoot 'target\debug'
+# Discover binaries + log dir for either deployment layout:
+#   SOURCE tree:  <repo>\exstar\scripts\launch\   (this script)
+#                 <repo>\target\{debug,release}\  (binaries)
+#                 <repo>\exstar\logs\launcher\    (logs)
+#   RELEASE zip:  <zip>\launcher\                 (this script)
+#                 <zip>\bin\                      (binaries)
+#                 <zip>\logs\launcher\            (logs)
+$candidates = @(
+    @{ Z = "$PSScriptRoot\..\bin";                 L = "$PSScriptRoot\..\logs\launcher" },
+    @{ Z = "$PSScriptRoot\..\..\..\target\debug";  L = "$PSScriptRoot\..\..\logs\launcher" },
+    @{ Z = "$PSScriptRoot\..\..\..\target\release"; L = "$PSScriptRoot\..\..\logs\launcher" }
+)
+$zludaDir = $null
+$logDirRaw = $null
+foreach ($c in $candidates) {
+    if (Test-Path (Join-Path $c.Z 'zluda.exe')) {
+        $zludaDir = (Resolve-Path $c.Z).Path
+        $logDirRaw = $c.L
+        break
+    }
+}
+if (-not $zludaDir) {
+    throw "zluda.exe not found near this script. Looked in: $($candidates.Z -join '; ')"
+}
 $exstarDir = 'C:\Program Files\Shining3d\EXStar Hub'
 $processNames = @(
     'zluda.exe',
@@ -335,7 +356,7 @@ function Invoke-Launch {
     Write-LauncherLog ("launched zluda pid={0}" -f $launched.Id)
 }
 
-$script:LogDir = Join-Path $exstarRoot 'logs\launcher'
+$script:LogDir = $logDirRaw
 New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
 $script:RunStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $script:LogPath = Join-Path $script:LogDir ("launch_exstar_zluda_{0}.log" -f $script:RunStamp)

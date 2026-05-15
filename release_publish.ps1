@@ -42,9 +42,16 @@ $tag = "v$Version"
 $zipName = "exstar-on-zluda-${tag}-windows-x64.zip"
 $zipPath = Join-Path $repoRoot $zipName
 
-# Pre-flight 1: gh CLI on PATH.
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-    throw "gh CLI not found on PATH. Install from https://cli.github.com, or use the GitHub web UI for this release."
+# Pre-flight 1: locate gh CLI. Try PATH first, then the default install path
+# (`C:\Program Files\GitHub CLI\gh.exe`) -- non-interactive PowerShell sessions
+# don't always inherit the per-user PATH where gh lives.
+$ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+if ($ghCmd) {
+    $ghExe = $ghCmd.Source
+} elseif (Test-Path 'C:\Program Files\GitHub CLI\gh.exe') {
+    $ghExe = 'C:\Program Files\GitHub CLI\gh.exe'
+} else {
+    throw "gh CLI not found on PATH or at the default install path. Install from https://cli.github.com, or use the GitHub web UI for this release."
 }
 
 # Pre-flight 2: zip present.
@@ -75,33 +82,29 @@ $notesFile = Join-Path $env:TEMP ("exstar-release-notes-{0}.md" -f $tag)
 $notes = @"
 ## Downloads
 
-- ``$zipName`` ($sizeMB MB) — Windows x64
+- ``$zipName`` ($sizeMB MB) -- Windows x64
   - SHA256: ``$hash``
   - Built from commit ``$tagShaShort``
 
 ## What this is
 
-Pre-built binaries for running Shining3D EXStar Hub on AMD GPUs via a
-patched ZLUDA runtime. Unzip and run ``launcher\launch_exstar_zluda.cmd``.
-See README.txt inside the zip for the full disclaimer, limitations, and
-troubleshooting steps.
+Pre-built binaries for running Shining3D EXStar Hub on AMD GPUs via a patched ZLUDA runtime. Unzip and run ``launcher\launch_exstar_zluda.cmd``. See README.txt inside the zip for the full disclaimer, limitations, and troubleshooting steps.
 
 ## Risk
 
-This project is not affiliated with, endorsed by, or supported by Shining3D.
-Shining3D officially requires NVIDIA hardware; this build bypasses those
-checks so EXStar runs on AMD via ZLUDA. You assume all compatibility,
-stability, support, warranty, and licensing risk that follows from running
-EXStar in an unsupported configuration.
+This project is not affiliated with, endorsed by, or supported by Shining3D. Shining3D officially requires NVIDIA hardware; this build bypasses those checks so EXStar runs on AMD via ZLUDA. You assume all compatibility, stability, support, warranty, and licensing risk that follows from running EXStar in an unsupported configuration.
 
 ## Source
 
-[contrapuntal/exstar-on-zluda](https://github.com/contrapuntal/exstar-on-zluda)
-at commit ``$tagShaShort``. Upstream ZLUDA:
-[vosen/ZLUDA](https://github.com/vosen/ZLUDA).
+[contrapuntal/exstar-on-zluda](https://github.com/contrapuntal/exstar-on-zluda) at commit ``$tagShaShort``. Upstream ZLUDA: [vosen/ZLUDA](https://github.com/vosen/ZLUDA).
 "@
 
-Set-Content -Path $notesFile -Value $notes -Encoding UTF8
+# Write the notes as UTF-8 without BOM so gh / GitHub render cleanly.
+[System.IO.File]::WriteAllText(
+    $notesFile,
+    $notes,
+    (New-Object System.Text.UTF8Encoding $false)
+)
 
 Write-Host "=== About to publish $tag ==="
 Write-Host "  zip:    $zipPath ($sizeMB MB)"
@@ -119,7 +122,7 @@ $ghArgs = @(
 )
 if ($Draft) { $ghArgs += '--draft' }
 
-& gh @ghArgs
+& $ghExe @ghArgs
 $ghExit = $LASTEXITCODE
 
 Remove-Item -Force $notesFile -ErrorAction SilentlyContinue
@@ -130,6 +133,5 @@ if ($ghExit -ne 0) {
 
 Write-Host ""
 Write-Host "=== Published ==="
-& gh release view $tag --web 2>$null
-& gh release view $tag --json url,name,tagName,isDraft,assets `
+& $ghExe release view $tag --json url,name,tagName,isDraft,assets `
     --jq '{url, name, tag: .tagName, draft: .isDraft, assets: [.assets[].name]}'
