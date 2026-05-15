@@ -1,13 +1,4 @@
+# Launcher logs and crash dumps (per-run; never share)
 logs/
-
-# Local Claude Code session permissions (never share)
-.claude/settings.local.json
-
-# Local dev / debug artifacts
 dumps/
 **/*.dmp
-*.log
-
-# Debugging notes / sitreps live in the sibling zluda-exstar-archive repo
-docs/EXSTAR_DEBUGGING.md
-docs/EXSTAR_PROJECT_STATUS.md

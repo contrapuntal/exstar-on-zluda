@@ -1,23 +1,13 @@
-# zluda-exstar-runtime
+# exstar-on-zluda
 
-A fork of [ZLUDA](https://github.com/vosen/ZLUDA) (CUDA-on-AMD-GPUs) with
-runtime patches that let Shining3D's **EXStar Hub** scanner software run on
-AMD GPUs.
+Run **EXStar Hub** (Shining3D's 3D-scanner software) on AMD GPUs via a
+patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 
-This is the buildable Rust workspace. End-user documentation, launcher
-scripts, and the recommended quickstart live in the companion repo:
+## Target
 
-> [**exstar-on-zluda**](https://github.com/contrapuntal/exstar-on-zluda) — start there if you just want to run EXStar Hub.
-
-## What's modified vs. upstream ZLUDA
-
-Most EXStar-specific changes live under `zluda/zluda_redirect/src/` —
-byte-signature-validated probes that hook EXStar Hub, `Sn3DprocessManager`,
-and `AppUi.dll` to bypass NVIDIA-CUDA-specific startup checks.
-
-ZLUDA core code (PTX parser, LLVM IR generation, cuBLAS/cuDNN/cuFFT shims)
-is unmodified from upstream and continues to track
-[vosen/ZLUDA](https://github.com/vosen/ZLUDA).
+- **Software**: Shining3D EXStar Hub for Windows
+- **GPUs**: AMD (RDNA / RDNA2 / RDNA3)
+- **OS**: Windows 10 / 11
 
 ## Validated EXStar Hub versions (as of 2026-05-14)
 
@@ -27,27 +17,80 @@ is unmodified from upstream and continues to track
 | v1.1.1-8 | working |
 | v1.1.1-9 | working (latest) |
 
-## Build
+## Quickstart — from source
 
 Prerequisites on Windows:
 
-- Rust (stable, MSVC toolchain)
-- Visual Studio Build Tools (C++ workload) or full VS
+- Git
+- Rust (stable, MSVC toolchain — install via [rustup](https://rustup.rs))
+- Visual Studio Build Tools (C++ workload) or full VS 2022
 - CMake
 - PowerShell
 
-From the repo root:
+Then:
 
-```cmd
-run_xtask_debug.cmd
+```powershell
+git clone https://github.com/contrapuntal/exstar-on-zluda.git
+cd exstar-on-zluda
+.\run_xtask_debug.cmd
+.\exstar\scripts\launch\launch_exstar_zluda.cmd
 ```
 
-Outputs land in `target\debug\` (`zluda.exe`, `zluda_redirect.dll`,
-`nvcuda.dll`, and helpers).
+The build takes 10–30 minutes the first time and produces `target\debug\zluda.exe`,
+`target\debug\zluda_redirect.dll`, and helpers. The launcher script finds them
+relative to the repo root automatically.
+
+## Repo layout
+
+```
+exstar-on-zluda/
+├── README.md                  (you are here)
+├── Cargo.toml                 \
+├── zluda/                      |
+├── zluda_redirect/             | Rust workspace — the ZLUDA fork with EXStar runtime hooks
+├── ptx/, ptx_parser/, ...      |
+├── llvm_zluda/                /
+├── target/debug/              compiled binaries (gitignored)
+└── exstar/                    EXStar-specific user-facing content
+    ├── docs/
+    │   ├── EXSTAR_USER_MANUAL.md
+    │   └── EXSTAR_COMPAT_REFERENCE.md
+    ├── scripts/
+    │   ├── launch/            launcher scripts (kill, normal, diagnose, stock)
+    │   └── debug/             diagnostic helpers
+    └── logs/                  per-run log output (gitignored)
+```
+
+## What's modified vs. upstream ZLUDA
+
+EXStar-specific code lives under `zluda/zluda_redirect/src/` — byte-signature-validated
+probes that hook EXStar Hub, `Sn3DprocessManager`, and `AppUi.dll` to bypass
+NVIDIA-CUDA-specific startup checks.
+
+ZLUDA core code (PTX parser, LLVM IR generation, cuBLAS/cuDNN/cuFFT shims) is
+unmodified from upstream and continues to track
+[vosen/ZLUDA](https://github.com/vosen/ZLUDA).
+
+## Documentation
+
+- `exstar/docs/EXSTAR_USER_MANUAL.md` — step-by-step launch instructions
+- `exstar/docs/EXSTAR_COMPAT_REFERENCE.md` — version matrix and what changed per release
+
+## Troubleshooting
+
+Failed launches and successful runs both leave structured logs under
+`exstar/logs/launcher/`. If EXStar hangs on the splash screen or a scan crashes,
+start with the most recent file there.
+
+Common gotcha: if rebuilding fails with "failed to remove file …zluda_redirect.dll
+Access is denied", a previous EXStar / zluda process is still holding the DLL —
+run `.\exstar\scripts\launch\kill_exstar_zluda.cmd` then rebuild.
 
 ## License
 
-Dual-licensed under MIT (`LICENSE-MIT`) and Apache-2.0 (`LICENSE-APACHE`),
-matching upstream ZLUDA. Upstream ZLUDA copyright remains with its original
-authors; EXStar-specific patches in this fork are licensed under the same
-terms.
+Dual-licensed under MIT (`LICENSE-MIT`) and Apache-2.0 (`LICENSE-APACHE`), matching
+upstream ZLUDA.
+
+Upstream ZLUDA copyright remains with its original authors. EXStar-specific
+patches and the launcher / docs in `exstar/` are Copyright © 2026 Aaron Yang,
+licensed under the same terms.

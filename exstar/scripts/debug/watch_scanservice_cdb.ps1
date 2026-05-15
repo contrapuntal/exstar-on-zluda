@@ -5,8 +5,8 @@ param(
     [int]$PollMilliseconds = 250
 )
 
-$repoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
-$debugDir = Join-Path $repoRoot 'logs\launcher'
+$exstarRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
+$debugDir = Join-Path $exstarRoot 'logs\launcher'
 # Override the cdb.exe path via $env:CDB_PATH. If unset, fall back to the
 # Microsoft Store WinDbg install (path includes a build number; adjust if needed).
 $fallbackCdb = 'C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2601.12001.0_x64__8wekyb3d8bbwe\amd64\cdb.exe'

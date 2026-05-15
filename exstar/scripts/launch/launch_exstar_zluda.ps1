@@ -4,9 +4,9 @@ param(
 
 $ErrorActionPreference = 'Continue'
 
-$repoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
-$runtimeRoot = (Resolve-Path "$repoRoot\..\zluda-exstar-runtime").Path
-$zludaDir = Join-Path $runtimeRoot 'target\debug'
+$exstarRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
+$repoRoot = (Resolve-Path "$exstarRoot\..").Path
+$zludaDir = Join-Path $repoRoot 'target\debug'
 $exstarDir = 'C:\Program Files\Shining3d\EXStar Hub'
 $processNames = @(
     'zluda.exe',
@@ -335,7 +335,7 @@ function Invoke-Launch {
     Write-LauncherLog ("launched zluda pid={0}" -f $launched.Id)
 }
 
-$script:LogDir = Join-Path $repoRoot 'logs\launcher'
+$script:LogDir = Join-Path $exstarRoot 'logs\launcher'
 New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
 $script:RunStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $script:LogPath = Join-Path $script:LogDir ("launch_exstar_zluda_{0}.log" -f $script:RunStamp)

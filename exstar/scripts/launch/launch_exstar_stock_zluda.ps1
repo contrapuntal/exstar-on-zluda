@@ -296,8 +296,8 @@ function Clear-LaunchEnvironment {
     }
 }
 
-$repoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
-$script:LogDir = Join-Path $repoRoot 'logs\launcher'
+$exstarRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
+$script:LogDir = Join-Path $exstarRoot 'logs\launcher'
 New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
 $script:RunStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $script:LogPath = Join-Path $script:LogDir ("launch_exstar_STOCK_{0}.log" -f $script:RunStamp)
