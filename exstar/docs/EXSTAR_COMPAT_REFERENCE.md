@@ -6,7 +6,7 @@ This document records the EXStar Hub compatibility state as of 2026-05-14:
 
 - ZLUDA branch in this repo: `master`
 - Original baseline (when the debug session below was captured):
-  `e07032098bdd3de8ec31ffd1ed5cdf96d55caae8` against EXStar Hub `v1.1.0-16`
+  `e07032098bdd3de8ec31ffd1ed5cdf96d55caae8` against EXStar Hub `v1.1.0.16`
 - Subsequently validated against EXStar Hub `v1.1.1-8` and `v1.1.1-9` after
   retargeting the `zluda_redirect` probes (commits visible in
   `git log -- zluda_redirect/src/`)
@@ -207,14 +207,12 @@ Relevant code change:
   - implements `cuMemcpy2DAsync_v2_ptsz`
   - uses `hipMemcpyParam2DAsync`
 
-Working rule:
-
-- always deploy the fresh `target\debug\nvcuda.dll` into `applications\`
-- do not assume only `zluda.exe` and `zluda_redirect.dll` need syncing
-
-Current status:
-
-- the stale-`nvcuda.dll` `0x12` path is cleared in the current deployed build
+Historical note: under the pre-monorepo split there was a separate
+`applications\` staging directory; a stale `nvcuda.dll` there once caused a
+`0x12` regression that masqueraded as a logic bug. With the current layout
+the launcher runs `target\debug\` binaries in place, so this failure mode
+should no longer apply — but it explains references to `applications\` in
+older debug logs and trace artifacts.
 
 ### 7. Child Hub shutdown bridge
 

@@ -46,7 +46,8 @@ From the repo root:
 run_xtask_debug.cmd
 ```
 
-Expected: `cargo xtask exit code: 0`. First-time builds take 10–30 minutes.
+Expected: `cargo xtask exit code: 0`. First-time builds take 15–60 minutes (see
+the README's *Disk + time budget* section for the full picture).
 
 Outputs land in `target\debug\` — at minimum: `zluda.exe`,
 `zluda_redirect.dll`, `nvcuda.dll`. The launcher scripts find these via
