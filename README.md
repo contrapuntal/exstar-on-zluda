@@ -56,15 +56,26 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 - CMake
 - PowerShell
 
-Then:
+### First-time setup (one-time)
 
 ```powershell
 git lfs install
 git clone https://github.com/contrapuntal/exstar-on-zluda.git
 cd exstar-on-zluda
 .\run_xtask_debug.cmd
+```
+
+Re-run `.\run_xtask_debug.cmd` only when you pull updates (`git pull`) or
+change source — not on every launch. Cargo's incremental cache makes
+subsequent builds fast (seconds to minutes).
+
+### Day-to-day: launch EXStar Hub
+
+```powershell
 .\exstar\scripts\launch\launch_exstar_zluda.cmd
 ```
+
+This is the only command you need for everyday use once the repo is built.
 
 (If you cloned before running `git lfs install`, run `git lfs pull` inside the
 repo to fetch the actual binary blobs.)
