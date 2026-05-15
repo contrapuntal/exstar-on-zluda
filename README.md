@@ -113,7 +113,7 @@ exstar-on-zluda/
 
 ## What's modified vs. upstream ZLUDA
 
-`zluda/zluda_redirect/src/` holds byte-signature-validated probes that hook
+`zluda_redirect/src/` holds byte-signature-validated probes that hook
 EXStar Hub, `Sn3DprocessManager`, and `AppUi.dll`, bypassing NVIDIA-CUDA
 startup checks.
 

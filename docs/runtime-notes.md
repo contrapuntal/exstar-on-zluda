@@ -7,7 +7,7 @@ contributors touching the Rust source.
 - `zluda_redirect` is the EXStar compatibility entrypoint — required at
   runtime for EXStar Hub to launch under this fork.
 - New EXStar-specific redirect logic should be isolated under
-  `zluda/zluda_redirect/src/exstar/` rather than scattered through `lib.rs`.
+  `zluda_redirect/src/exstar/` rather than scattered through `lib.rs`.
 - Build output lives in `target/debug/` (or `target/release/`); the launcher
   scripts in `exstar/scripts/launch/` find these binaries via repo-relative
   paths — no manual sync required.

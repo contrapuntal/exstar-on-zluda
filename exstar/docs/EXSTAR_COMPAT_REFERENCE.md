@@ -9,7 +9,7 @@ This document records the EXStar Hub compatibility state as of 2026-05-14:
   `e07032098bdd3de8ec31ffd1ed5cdf96d55caae8` against EXStar Hub `v1.1.0-16`
 - Subsequently validated against EXStar Hub `v1.1.1-8` and `v1.1.1-9` after
   retargeting the `zluda_redirect` probes (commits visible in
-  `git log -- zluda/zluda_redirect/src/`)
+  `git log -- zluda_redirect/src/`)
 
 This is both:
 
