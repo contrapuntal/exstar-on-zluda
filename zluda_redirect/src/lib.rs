@@ -4,6 +4,10 @@
 // the matching offset probe. They appear "never used" to the compiler for
 // any single version but are intentionally kept for cross-version support.
 #![allow(dead_code)]
+// FFI wrappers around Win32 / DXGI vtable functions intentionally retain
+// CamelCase to mirror the names of the originals they replace (the `Zluda`
+// prefix marks our hooks).
+#![allow(non_snake_case)]
 
 mod exstar;
 use exstar::prestartcheck::{
@@ -1711,9 +1715,12 @@ unsafe fn ensure_exstar_vectored_exception_handler() {
     if EXSTAR_VECTORED_EXCEPTION_HANDLER.is_null() {
         log_exstar_host(format_args!("kind=exception hook=veh_register_failed"));
     } else {
+        // Snapshot the static into a local so format_args!'s implicit `&`
+        // doesn't trigger the `static_mut_refs` lint.
+        let handle = EXSTAR_VECTORED_EXCEPTION_HANDLER;
         log_exstar_host(format_args!(
             "kind=exception hook=veh_registered handle={:p}",
-            EXSTAR_VECTORED_EXCEPTION_HANDLER
+            handle
         ));
     }
 }
@@ -1921,7 +1928,10 @@ unsafe fn qt_event_type(event: *mut c_void) -> Option<i32> {
     if event.is_null() {
         return None;
     }
-    if QT_EVENT_TYPE.is_none() {
+    // Snapshot the static into a local for the `.is_none()` check so we don't
+    // create an implicit `&` reference to a mutable static.
+    let cached = QT_EVENT_TYPE;
+    if cached.is_none() {
         let qt_core = GetModuleHandleA(c"Qt5Core.dll".as_ptr().cast());
         if !qt_core.is_null() {
             QT_EVENT_TYPE =
@@ -5406,7 +5416,7 @@ unsafe extern "system" fn zluda_scanservice_exe_entry_6a40(
         Some(watchdog_thread_proc),
         main_thread_id as *mut c_void,
         0,
-        &mut WATCHDOG_TID,
+        &raw mut WATCHDOG_TID,
     );
     let result = SCANSERVICE_EXE_ENTRY_6A40
         .map(|original| original(this, arg1, arg2, arg3, arg4, arg5))
@@ -7877,7 +7887,8 @@ fn exstar_spawn_child_hub_shutdown_bridge() {
                             manager_pid
                         ));
                         EXIT_PROCESS_FN(0);
-                        close_posted = true;
+                        // unreachable after ExitProcess; left out since the
+                        // surrounding loop never observes this assignment.
                     }
                 }
             }
