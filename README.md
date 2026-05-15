@@ -24,8 +24,9 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
   been validated; other AMD GPUs that ZLUDA itself supports may also work,
   but this project has not tested them
 - **OS**: Windows 10 / 11
-- **Tested on**: AMD Ryzen AI MAX+ 395 with 128 GB RAM, paired with a
-  Shining3D **Einstar Rockit** handheld 3D scanner
+- **Tested on**: AMD Ryzen AI MAX+ 395 (Radeon **8060S** integrated GPU)
+  with 128 GB RAM, paired with a Shining3D **Einstar Rockit** handheld
+  3D scanner
 
 ## Validated EXStar Hub versions (as of 2026-05-14)
 

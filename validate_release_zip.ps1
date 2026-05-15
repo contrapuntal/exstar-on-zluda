@@ -57,7 +57,6 @@ try {
         'bin\nvcuda.dll',
         'launcher\launch_exstar_zluda.cmd',
         'launcher\launch_exstar_zluda.ps1',
-        'launcher\launch_exstar_zluda_diagnose.cmd',
         'launcher\kill_exstar_zluda.cmd',
         'launcher\kill_exstar_zluda.ps1',
         'README.txt',

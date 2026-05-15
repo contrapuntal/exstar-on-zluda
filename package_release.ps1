@@ -87,7 +87,6 @@ $launcherSrc = Join-Path $repoRoot 'exstar\scripts\launch'
 $launcherInclude = @(
     'launch_exstar_zluda.cmd',
     'launch_exstar_zluda.ps1',
-    'launch_exstar_zluda_diagnose.cmd',
     'kill_exstar_zluda.cmd',
     'kill_exstar_zluda.ps1'
 )
@@ -149,7 +148,8 @@ LIMITATIONS / RISK
 - EXStar Hub binaries are not included in this zip; install separately.
 - Validated against EXStar Hub v1.1.1-9 (as of 2026-05-14) with an Einstar
   Rockit scanner. Other versions or scanners may work but are not validated.
-- Tested only on AMD Ryzen AI MAX+ 395 with 128 GB RAM under Windows 10/11.
+- Tested only on AMD Ryzen AI MAX+ 395 (Radeon 8060S integrated GPU)
+  with 128 GB RAM under Windows 10/11.
 - Shining3D officially requires NVIDIA hardware. This build bypasses those
   checks. You assume all compatibility, stability, support, warranty, and
   licensing risk that follows.
