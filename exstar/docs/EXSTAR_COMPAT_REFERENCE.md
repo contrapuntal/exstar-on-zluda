@@ -2,13 +2,14 @@
 
 ## Scope
 
-This document records the working EXStar Hub compatibility state as of:
+This document records the EXStar Hub compatibility state as of 2026-05-14:
 
-- ZLUDA repo: `%USERPROFILE%\proj\zluda-exstar-runtime`
-- ZLUDA branch: `master`
-- ZLUDA commit baseline from this debugging track: `e07032098bdd3de8ec31ffd1ed5cdf96d55caae8`
-- EXStar Hub build observed on screen: `v1.1.0-16`
-- Date of final working validation: `2026-03-28`
+- ZLUDA branch in this repo: `master`
+- Original baseline (when the debug session below was captured):
+  `e07032098bdd3de8ec31ffd1ed5cdf96d55caae8` against EXStar Hub `v1.1.0-16`
+- Subsequently validated against EXStar Hub `v1.1.1-8` and `v1.1.1-9` after
+  retargeting the `zluda_redirect` probes (commits visible in
+  `git log -- zluda/zluda_redirect/src/`)
 
 This is both:
 
@@ -33,7 +34,7 @@ Validated results:
 
 Reference artifact:
 
-- `<runtime-repo>\target\debug\debug\launcher\desktop-capture-no-trace-prestart-fix.png`
+- `target\debug\debug\launcher\desktop-capture-no-trace-prestart-fix.png`
 
 ## What Actually Broke
 
@@ -197,7 +198,7 @@ The important operational lesson was deployment, not only code:
 - `applications\nvcuda.dll` had become stale relative to `target\debug\nvcuda.dll`
 - `scanservice.exe` was crashing in the stale deployed DLL
 - Windows event log showed:
-  - faulting module: `<runtime-repo>\target\debug\nvcuda.dll`
+  - faulting module: `target\debug\nvcuda.dll`
   - exception: `0xc0000409`
   - offset: `0x7ff9ad`
 
@@ -254,35 +255,42 @@ They broke Qt widget initialization or caused stack corruption.
 
 ### Build
 
-Use:
+From the repo root:
 
-- `<runtime-repo>\run_xtask_debug.cmd`
+```cmd
+run_xtask_debug.cmd
+```
 
 ### Deploy
 
-Always manually sync both files after building:
-
-- `target\debug\zluda.exe` -> `applications\zluda.exe`
-- `target\debug\zluda_redirect.dll` -> `applications\zluda_redirect.dll`
-
-This is critical. A stale deployed DLL caused multiple false regressions during debugging.
+No manual sync is needed. The launcher scripts in `exstar/scripts/launch/`
+invoke `target\debug\zluda.exe` directly. Historical note: under the
+pre-monorepo layout the binaries were synced to a separate `applications\`
+staging directory and a stale staged DLL caused multiple false regressions —
+the in-place launch from `target\debug\` removes that failure mode.
 
 ### Launch
 
-Use:
+Preferred (kills stale processes, logs to `exstar\logs\launcher\`):
+
+```cmd
+.\exstar\scripts\launch\launch_exstar_zluda.cmd
+```
+
+Raw equivalent if you want to skip the launcher harness:
 
 ```powershell
 Get-Process -Name 'EXStar*','Sn3D*','scanservice','scanhub','softwareUpgrade','TestOpenglHelper','DeviceHelper','informationCollect','SnSyncService','einscan_net_svr','zluda' -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep 5
-Start-Process -FilePath "<runtime-repo>\target\debug\zluda.exe" -ArgumentList "--zluda", "C:\Program Files\Shining3d\EXStar Hub\EXStar Hub.exe" -WorkingDirectory "C:\Program Files\Shining3d\EXStar Hub"
+Start-Process -FilePath ".\target\debug\zluda.exe" -ArgumentList "--zluda", "C:\Program Files\Shining3d\EXStar Hub\EXStar Hub.exe" -WorkingDirectory "C:\Program Files\Shining3d\EXStar Hub"
 ```
 
-Optional trace env:
+Optional trace env (or use `launch_exstar_zluda.cmd /Diagnose`):
 
 ```powershell
 $env:ZLUDA_DEBUG='1'
 $env:ZLUDA_EXSTAR_HOST_TRACE='1'
-$env:ZLUDA_EXSTAR_HOST_TRACE_PATH='<runtime-repo>\target\debug\debug\launcher\manual-trace.log'
+$env:ZLUDA_EXSTAR_HOST_TRACE_PATH = "$PWD\exstar\logs\launcher\manual-trace.log"
 ```
 
 ### Working-state signals
@@ -322,10 +330,11 @@ Only close dialogs when there is strong evidence from title or child text.
 
 ### Do not trust stale deployment
 
-Always verify hashes or recopy:
-
-- `applications\zluda.exe`
-- `applications\zluda_redirect.dll`
+Under the pre-monorepo split this was a recurring issue when a separate
+`applications\` staging directory drifted from the freshly-built `target\debug\`
+DLLs. The current launcher invokes `target\debug\` directly, so this trap
+should not recur — but if you customize the launch path, always rebuild before
+declaring a regression real.
 
 ### Do not keep the old `PrestartCheck.dll` patch as gospel
 
@@ -457,7 +466,9 @@ These offsets are for the current EXStar build only and must not be treated as s
 
 ### Trace artifact of working run
 
-- `<runtime-repo>\target\debug\debug\launcher\manual-trace-prestart-fix.log`
+A successful `launch_exstar_zluda.cmd /Diagnose` run produces a host trace
+at `exstar\logs\launcher\launch_exstar_zluda_<timestamp>_host.log` containing
+all of the `kind=compat` signals enumerated above.
 
 ## Recommended Maintenance
 
