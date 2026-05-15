@@ -32,6 +32,10 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 | --- | --- |
 | v1.1.1-9 | working (latest) |
 
+Earlier versions (`v1.1.0.16` and `v1.1.1-8`) were also validated during the
+patch's evolution; see `exstar/docs/EXSTAR_COMPAT_REFERENCE.md` for the
+historical track. Only `v1.1.1-9` is the currently advertised target.
+
 ## Quickstart — from source
 
 > **Heads-up: this is a challenging install.** Building requires the Rust +
@@ -58,7 +62,9 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 - Git **with Git LFS** (`.gitattributes` puts `*.dll` and `*.bc` under LFS;
   cloning without LFS leaves them as pointer files and the build fails)
 - Rust (stable, MSVC toolchain — install via [rustup](https://rustup.rs))
-- Visual Studio Build Tools (C++ workload) or full VS 2022
+- Visual Studio 2022 — Build Tools, Community, Professional, or Enterprise,
+  all with the **Desktop development with C++** workload installed
+  (`run_xtask_debug.cmd` finds whichever you have via `vswhere`)
 - CMake
 - PowerShell
 
@@ -86,9 +92,10 @@ This is the only command you need for everyday use once the repo is built.
 (If you cloned before running `git lfs install`, run `git lfs pull` inside the
 repo to fetch the actual binary blobs.)
 
-The build takes 10–30 minutes the first time and produces `target\debug\zluda.exe`,
-`target\debug\zluda_redirect.dll`, and helpers. The launcher script finds them
-relative to the repo root automatically.
+The build takes 15–60 minutes the first time (matching the *Disk + time budget*
+above) and produces `target\debug\zluda.exe`, `target\debug\zluda_redirect.dll`,
+and helpers. The launcher script finds them relative to the repo root
+automatically.
 
 ## Repo layout
 

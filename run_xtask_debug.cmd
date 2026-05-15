@@ -1,13 +1,27 @@
 @echo off
 setlocal
 
-set "VS_DEV_CMD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"
 set "REPO_ROOT=%~dp0"
 set "PATH=%USERPROFILE%\.cargo\bin;%PATH%"
 set "BUILD_LOG=%REPO_ROOT%run_xtask_debug.log"
 
+rem  Discover any installed VS edition (Build Tools / Community / Professional /
+rem  Enterprise) via vswhere, falling back to the Build Tools hard-coded path.
+rem  Without vswhere, users with only full VS would fail before building.
+set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+set "VS_DEV_CMD="
+if exist "%VSWHERE%" (
+    for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+        set "VS_DEV_CMD=%%i\Common7\Tools\VsDevCmd.bat"
+    )
+)
+if not exist "%VS_DEV_CMD%" set "VS_DEV_CMD=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"
+
 if not exist "%VS_DEV_CMD%" (
-    echo VS developer command script not found: "%VS_DEV_CMD%"
+    echo VS developer command script not found.
+    echo Looked via vswhere (%VSWHERE%) and at the Build Tools fallback path.
+    echo Install VS 2022 Build Tools or any VS 2022 edition with the
+    echo "Desktop development with C++" workload.
     exit /b 1
 )
 
