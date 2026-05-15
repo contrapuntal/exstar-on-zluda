@@ -135,21 +135,33 @@ git push origin v0.1.0
 
 ```
 exstar-on-zluda/
-├── README.md                  (you are here)
-├── Cargo.toml                 \
-├── zluda/                      |
-├── zluda_redirect/             | Rust workspace — the ZLUDA fork with EXStar runtime hooks
-├── ptx/, ptx_parser/, ...      |
-├── llvm_zluda/                /
-├── target/debug/              compiled binaries (gitignored)
-└── exstar/                    EXStar-specific user-facing content
+├── README.md                       (you are here)
+├── LICENSE-MIT, LICENSE-APACHE     dual license, inherited from upstream ZLUDA
+│
+├── run_xtask_debug.cmd             \  build entry points
+├── run_xtask_release.cmd           /  (see *Build from source*)
+├── package_release.ps1             \
+├── release_publish.ps1              > maintainer scripts for cutting a release
+├── validate_release_zip.ps1        /
+│
+├── Cargo.toml                      \
+├── zluda/                           |  Rust workspace — the ZLUDA fork.
+├── zluda_redirect/                  |  EXStar-specific runtime hooks live
+├── ptx/, ptx_parser/, ...           |  under zluda_redirect/src/
+├── llvm_zluda/                      |
+├── ...                              /  (~30 other workspace crates)
+├── ext/                            vendored LLVM source — most of the clone size
+├── target/{debug,release}/         compiled binaries (gitignored)
+│
+└── exstar/                         EXStar-specific user-facing content
     ├── docs/
     │   ├── EXSTAR_USER_MANUAL.md
     │   └── EXSTAR_COMPAT_REFERENCE.md
     ├── scripts/
-    │   ├── launch/            launcher scripts (kill, normal, diagnose, stock)
-    │   └── debug/             diagnostic helpers
-    └── logs/                  per-run log output (gitignored)
+    │   ├── launch/                 launch + kill scripts; stock-zluda A/B
+    │   │                           harness for developer baseline comparison
+    │   └── debug/                  diagnostic helpers (cdb watchdog, event-log query)
+    └── logs/                       per-run log output (gitignored)
 ```
 
 ## What's modified vs. upstream ZLUDA
