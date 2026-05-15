@@ -3,6 +3,20 @@
 Run **EXStar Hub** (Shining3D's 3D-scanner software) on AMD GPUs via a
 patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 
+## Disclaimer
+
+- This project is **not affiliated with, endorsed by, or supported by Shining3D**.
+- **EXStar Hub binaries are not included.** You need to install EXStar Hub
+  legitimately from Shining3D yourself before this repo is useful.
+- Shining3D's official position is that EXStar Hub on Windows requires an NVIDIA
+  GPU. This project intentionally bypasses those checks so the software can run
+  on AMD GPUs via ZLUDA. **You assume any compatibility, stability, support,
+  warranty, or licensing risk that follows from running EXStar in a configuration
+  Shining3D does not officially support.**
+- No Shining3D documentation, screenshots, or assets are redistributed here; the
+  technical descriptions in this repo are the author's own observations of how
+  the patched runtime interacts with a locally-installed EXStar.
+
 ## Target
 
 - **Software**: Shining3D EXStar Hub for Windows
@@ -21,7 +35,8 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 
 Prerequisites on Windows:
 
-- Git
+- Git **with Git LFS** (`.gitattributes` puts `*.dll` and `*.bc` under LFS;
+  cloning without LFS leaves them as pointer files and the build fails)
 - Rust (stable, MSVC toolchain — install via [rustup](https://rustup.rs))
 - Visual Studio Build Tools (C++ workload) or full VS 2022
 - CMake
@@ -30,11 +45,15 @@ Prerequisites on Windows:
 Then:
 
 ```powershell
+git lfs install
 git clone https://github.com/contrapuntal/exstar-on-zluda.git
 cd exstar-on-zluda
 .\run_xtask_debug.cmd
 .\exstar\scripts\launch\launch_exstar_zluda.cmd
 ```
+
+(If you cloned before running `git lfs install`, run `git lfs pull` inside the
+repo to fetch the actual binary blobs.)
 
 The build takes 10–30 minutes the first time and produces `target\debug\zluda.exe`,
 `target\debug\zluda_redirect.dll`, and helpers. The launcher script finds them
