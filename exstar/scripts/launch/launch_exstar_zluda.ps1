@@ -21,7 +21,11 @@ $logDirRaw = $null
 foreach ($c in $candidates) {
     if (Test-Path (Join-Path $c.Z 'zluda.exe')) {
         $zludaDir = (Resolve-Path $c.Z).Path
-        $logDirRaw = $c.L
+        # Normalize ..\ in the log-dir string. Some PowerShell hosts pass the
+        # raw path through unchanged when New-Item creates the dir, which
+        # makes log lines elsewhere print confusing `...\launcher\..\logs\`
+        # paths even though the actual directory ends up in the right spot.
+        $logDirRaw = [System.IO.Path]::GetFullPath($c.L)
         break
     }
 }

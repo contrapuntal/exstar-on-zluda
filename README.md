@@ -24,7 +24,8 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
   been validated; other AMD GPUs that ZLUDA itself supports may also work,
   but this project has not tested them
 - **OS**: Windows 10 / 11
-- **Tested on**: AMD Ryzen AI MAX+ 395 with 128 GB RAM
+- **Tested on**: AMD Ryzen AI MAX+ 395 with 128 GB RAM, paired with a
+  Shining3D **Einstar Rockit** handheld 3D scanner
 
 ## Validated EXStar Hub versions (as of 2026-05-14)
 
@@ -45,8 +46,9 @@ toolchain, no compile, ~30 MB download.
    and download `exstar-on-zluda-v<version>-windows-x64.zip`.
 2. (Optional, recommended) Verify the zip's SHA256 against the value in the
    release body.
-3. Install Shining3D EXStar Hub separately at
-   `C:\Program Files\Shining3d\EXStar Hub`.
+3. Download and install Shining3D EXStar Hub from
+   [the official download page](https://support.einstar.com/support/solutions/articles/60001635292-download-exstar-hub-desktop-software-for-einstar-rockit-einstar-2-)
+   at the default location `C:\Program Files\Shining3d\EXStar Hub`.
 4. Unzip and run:
 
    ```cmd

@@ -130,8 +130,9 @@ supported by Shining3D.
 QUICK START
 -----------
 
-1. Install Shining3D EXStar Hub separately. The default install location
-   this package expects is:
+1. Download and install Shining3D EXStar Hub from:
+     https://support.einstar.com/support/solutions/articles/60001635292-download-exstar-hub-desktop-software-for-einstar-rockit-einstar-2-
+   The default install location this package expects is:
      C:\Program Files\Shining3d\EXStar Hub
 
 2. Unzip this archive so that bin\ and launcher\ sit side-by-side.
@@ -146,8 +147,8 @@ LIMITATIONS / RISK
 ------------------
 
 - EXStar Hub binaries are not included in this zip; install separately.
-- Validated against EXStar Hub v1.1.1-9 (as of 2026-05-14). Other versions
-  may work but are not currently validated.
+- Validated against EXStar Hub v1.1.1-9 (as of 2026-05-14) with an Einstar
+  Rockit scanner. Other versions or scanners may work but are not validated.
 - Tested only on AMD Ryzen AI MAX+ 395 with 128 GB RAM under Windows 10/11.
 - Shining3D officially requires NVIDIA hardware. This build bypasses those
   checks. You assume all compatibility, stability, support, warranty, and
