@@ -11,5 +11,5 @@ contributors touching the Rust source.
 - Build output lives in `target/debug/` (or `target/release/`); the launcher
   scripts in `exstar/scripts/launch/` find these binaries via repo-relative
   paths — no manual sync required.
-- Per-run launcher logs land in `exstar/logs/launcher/` (gitignored).
-  Crash dumps go in `exstar/dumps/` (gitignored). Never commit either.
+- Per-run launcher logs land in `exstar/logs/launcher/`; crash dumps in
+  `exstar/dumps/`. Both are gitignored — keep them that way.

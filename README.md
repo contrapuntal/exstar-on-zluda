@@ -34,12 +34,18 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 
 ## Quickstart — from source
 
+> **Heads-up: this is a challenging install.** Building requires the Rust +
+> MSVC + CMake toolchain, ~20 GB of free disk, and a 15–60 minute first
+> build. This project is currently for users comfortable with Windows native
+> build toolchains. A binary release would lower the bar significantly —
+> none yet exists.
+
 ### Disk + time budget
 
 - **Clone download**: ~260 MB (most of which is the vendored LLVM source tree)
 - **Source on disk after clone**: ~1.5 GB
-- **`target/` after first debug build**: ~15 GB (Cargo builds + caches every
-  transitive dependency; this is normal for a workspace this size)
+- **`target/` after first debug build**: ~15 GB (Cargo builds and caches every
+  transitive dependency, normal for a workspace this size)
 - **Recommended free disk space**: **≥ 20 GB** to leave room for `target/`,
   the Cargo registry cache (`~/.cargo/registry/`, shared across Rust projects),
   and slack for incremental rebuilds
@@ -65,8 +71,8 @@ cd exstar-on-zluda
 .\run_xtask_debug.cmd
 ```
 
-Re-run `.\run_xtask_debug.cmd` only when you pull updates (`git pull`) or
-change source — not on every launch. Cargo's incremental cache makes
+Re-run `.\run_xtask_debug.cmd` after `git pull` or any source change.
+Day-to-day launches need no rebuild. Cargo's incremental cache makes
 subsequent builds fast (seconds to minutes).
 
 ### Day-to-day: launch EXStar Hub
@@ -107,9 +113,9 @@ exstar-on-zluda/
 
 ## What's modified vs. upstream ZLUDA
 
-EXStar-specific code lives under `zluda/zluda_redirect/src/` — byte-signature-validated
-probes that hook EXStar Hub, `Sn3DprocessManager`, and `AppUi.dll` to bypass
-NVIDIA-CUDA-specific startup checks.
+`zluda/zluda_redirect/src/` holds byte-signature-validated probes that hook
+EXStar Hub, `Sn3DprocessManager`, and `AppUi.dll`, bypassing NVIDIA-CUDA
+startup checks.
 
 ZLUDA core code (PTX parser, LLVM IR generation, cuBLAS/cuDNN/cuFFT shims) is
 unmodified from upstream and continues to track

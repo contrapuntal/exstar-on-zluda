@@ -18,7 +18,7 @@ This is both:
 
 ## Final Outcome
 
-A normal ZLUDA launch now reaches the real EXStar Hub home screen instead of hanging on the splash screen.
+A normal ZLUDA launch now reaches the real EXStar Hub home screen; it no longer hangs at the splash.
 
 Validated results:
 
@@ -53,7 +53,7 @@ The real failure chain for the current EXStar version was:
    - splash QML errors: `$prestartCheckController is not defined`
    - invalid Qt object-private pointer use during the later timer callback
 
-That meant the splash/controller path was partially initialized, then later code dereferenced state that had never been created.
+The splash/controller path initialized partially, then later code dereferenced state never created.
 
 ## Root Cause
 
@@ -83,9 +83,7 @@ The direct symptom match was strong:
 
 ## Current Fix
 
-Do not rely on the old on-disk `PrestartCheck.dll` patch as the final fix for this EXStar version.
-
-Instead, ZLUDA now corrects `PrestartCheck.dll` in memory at load time.
+ZLUDA now corrects `PrestartCheck.dll` in memory at load time; the old on-disk patch is obsolete for this EXStar version.
 
 ### Runtime patch logic
 
@@ -142,7 +140,7 @@ Relevant fixes:
 - `zluda_redirect/src/lib.rs`
   - CreateProcess path adds `CREATE_BREAKAWAY_FROM_JOB`
 
-Without this, helper processes terminate early and startup fails far before the UI stage.
+Helper processes need this to survive past early startup; without it they die before the UI stage.
 
 ### 2. NVIDIA identity spoofing
 
@@ -357,7 +355,7 @@ alive while the startup shell still made the UI look stuck. Always confirm:
 
 If EXStar Hub changes version, assume the current offsets may move.
 
-Do not start by copying offsets blindly. Start by re-establishing the failure boundary.
+Start by re-establishing the failure boundary, not by copying offsets blindly.
 
 ### Step 1. Reproduce with host trace
 
@@ -443,7 +441,7 @@ Final validation must be:
 
 ## Current Working Reference Points
 
-These offsets are for the current EXStar build only and must not be treated as stable across releases.
+These offsets are valid only for the current EXStar build; expect them to move across releases.
 
 ### PrestartCheck.dll
 

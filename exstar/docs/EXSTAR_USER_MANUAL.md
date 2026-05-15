@@ -2,9 +2,8 @@
 
 ## Purpose
 
-This manual covers the day-to-day flow for building and launching the patched
-ZLUDA runtime in this repo against a locally-installed copy of Shining3D
-**EXStar Hub** on an AMD GPU.
+This manual covers building and launching the patched ZLUDA runtime against
+a locally-installed Shining3D **EXStar Hub** on an AMD GPU.
 
 Use this file if you want to:
 
@@ -24,8 +23,8 @@ this file.
 - Validated EXStar Hub version (as of 2026-05-14):
   - `v1.1.1-9` (latest)
 
-The repo only contains the ZLUDA fork and supporting scripts — it does **not**
-include EXStar binaries. You must install EXStar Hub separately from Shining3D.
+The repo contains only the ZLUDA fork and supporting scripts. Install EXStar
+Hub separately from Shining3D.
 
 ## Prerequisites
 
