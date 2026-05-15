@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
-use std::sync::{Mutex, OnceLock};
+use std::sync::Mutex;
 
 use crate::{
     EXSTAR_APPUI_TRACE, EXSTAR_EXE_TRACE, EXSTAR_HOST_TRACE, EXSTAR_HOST_TRACE_FILE,

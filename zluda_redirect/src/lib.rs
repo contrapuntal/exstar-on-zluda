@@ -1,12 +1,16 @@
 #![cfg(target_os = "windows")]
+// EXStar compatibility scaffolding: many statics, type aliases, and probe
+// functions are populated only when a specific EXStar Hub version triggers
+// the matching offset probe. They appear "never used" to the compiler for
+// any single version but are intentionally kept for cross-version support.
+#![allow(dead_code)]
 
 mod exstar;
 use exstar::prestartcheck::{
     exstar_patch_prestartcheck_module, exstar_should_suppress_prestartcheck_timer,
 };
 use exstar::trace::{
-    env_flag, exstar_appui_trace_enabled, exstar_exe_trace_enabled, exstar_host_trace_enabled,
-    exstar_host_trace_file, exstar_hub_light_trace_enabled, exstar_light_trace_enabled,
+    env_flag, exstar_appui_trace_enabled, exstar_exe_trace_enabled, exstar_host_trace_enabled, exstar_hub_light_trace_enabled, exstar_light_trace_enabled,
     exstar_trace_logging_enabled, log_exstar_host,
 };
 
@@ -19,8 +23,7 @@ use rustc_hash::FxHashMap;
 use std::collections::hash_map;
 use std::env;
 use std::ffi::{c_char, CStr, CString};
-use std::fs::{create_dir_all, File, OpenOptions};
-use std::io::Write;
+use std::fs::File;
 use std::iter::Peekable;
 use std::path;
 use std::process::Command;
@@ -39,9 +42,8 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
     PROCESSENTRY32W, TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD, THREADENTRY32,
 };
 use windows::Win32::System::Threading::{
-    GetCurrentProcess, GetCurrentProcessId, GetCurrentThread, GetCurrentThreadId, OpenProcess,
-    OpenThread, ResumeThread, SuspendThread, TerminateProcess, PROCESS_QUERY_LIMITED_INFORMATION,
-    THREAD_QUERY_LIMITED_INFORMATION, THREAD_SUSPEND_RESUME,
+    GetCurrentProcess, GetCurrentProcessId, GetCurrentThread, GetCurrentThreadId,
+    OpenThread, ResumeThread, SuspendThread, TerminateProcess, THREAD_SUSPEND_RESUME,
 };
 use windows_sys::core::{BOOL, PCSTR, PCWSTR, PSTR, PWSTR};
 use windows_sys::Win32::Foundation::{
@@ -2666,7 +2668,7 @@ unsafe fn exstar_preserve_hub_until_related_manager_exit() {
     let mutex_handle = EXSTAR_DUPLICATE_MUTEX_HANDLE.swap(0, std::sync::atomic::Ordering::Relaxed);
     if mutex_handle != 0 {
         windows_sys::Win32::System::Threading::ReleaseMutex(mutex_handle as _);
-        CloseHandle(HANDLE(mutex_handle as *mut c_void));
+        CloseHandle(HANDLE(mutex_handle as *mut c_void)).ok();
         log_exstar_host(format_args!(
             "kind=compat action=release_duplicate_mutex handle=0x{:x} name=EinScan-Pro.exe",
             mutex_handle
@@ -2787,7 +2789,7 @@ unsafe fn close_non_essential_file_handles(reason: &str, manager_pid: u32) {
     // NtQuerySystemInformation with SystemHandleInformation is complex.
     // Simpler approach: iterate handle values 4..1024 (typical range) and
     // close file-type handles that aren't stdin/stdout/stderr or our log file.
-    let process = windows_sys::Win32::System::Threading::GetCurrentProcess();
+    let _process = windows_sys::Win32::System::Threading::GetCurrentProcess();
     let ntdll = GetModuleHandleA(c"ntdll.dll".as_ptr().cast());
 
     // NtQueryObject to get handle type
@@ -2858,7 +2860,7 @@ unsafe fn close_non_essential_file_handles(reason: &str, manager_pid: u32) {
 
         if type_name == "File" {
             // This is a file handle — close it to release locks
-            CloseHandle(HANDLE(handle as _));
+            CloseHandle(HANDLE(handle as _)).ok();
             closed_count += 1;
         }
     }
@@ -5218,12 +5220,12 @@ unsafe extern "system" fn zluda_exstar_exe_f9ec(
 /// Under ZLUDA, we know the GPU works (CUDA fully operational), but the checks
 /// fail intermittently due to QProcess timing and lack of NVIDIA OpenGL driver.
 unsafe extern "system" fn zluda_process_manager_check_opengl(
-    this: *mut c_void,
-    arg1: *mut c_void,
-    arg2: *mut c_void,
-    arg3: *mut c_void,
-    arg4: *mut c_void,
-    arg5: *mut c_void,
+    _this: *mut c_void,
+    _arg1: *mut c_void,
+    _arg2: *mut c_void,
+    _arg3: *mut c_void,
+    _arg4: *mut c_void,
+    _arg5: *mut c_void,
 ) -> usize {
     log_exstar_host(format_args!(
         "kind=compat action=check_opengl_bypass result=true (skipping TestOpenglHelper+MediaPlayer checks)"
@@ -7821,7 +7823,7 @@ fn exstar_spawn_child_hub_shutdown_bridge() {
     thread::spawn(|| unsafe {
         let deadline = Instant::now() + Duration::from_secs(600);
         let mut observed_manager_pid = exstar_child_hub_manager_pid_from_args();
-        let mut close_posted = false;
+        let close_posted = false;
         while Instant::now() < deadline && !close_posted {
             thread::sleep(Duration::from_millis(250));
             let app_window_shown = EXSTAR_CHILD_HUB_APP_WINDOW_SHOWN.load(Ordering::SeqCst)
