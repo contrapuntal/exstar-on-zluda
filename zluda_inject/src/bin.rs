@@ -9,8 +9,8 @@ use std::{env, mem, process, ptr};
 use windows::Win32::Foundation::{HANDLE, WAIT_FAILED};
 use windows::Win32::System::JobObjects::{
     AssignProcessToJobObject, JobObjectExtendedLimitInformation, SetInformationJobObject,
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
-    JOB_OBJECT_LIMIT_BREAKAWAY_OK,
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_BREAKAWAY_OK,
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 use windows::Win32::System::Threading::{
     self, GetExitCodeProcess, ResumeThread, WaitForSingleObject, CREATE_SUSPENDED,
@@ -343,7 +343,8 @@ impl InjectionConfig {
 fn kill_child_on_process_exit(child: detours_sys::HANDLE) -> Result<(), Box<dyn Error>> {
     let job_handle = unsafe { windows::Win32::System::JobObjects::CreateJobObjectA(None, None) }?;
     let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
-    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK;
+    info.BasicLimitInformation.LimitFlags =
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK;
     unsafe {
         SetInformationJobObject(
             job_handle,

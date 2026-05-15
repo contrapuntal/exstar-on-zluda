@@ -161,13 +161,12 @@ pub(crate) fn exstar_device_qualification_compat() -> bool {
     // Always spoof NVIDIA device attributes for EXStar compatibility.
     // EXStar checks GPU name/capabilities and refuses to run on non-NVIDIA GPUs.
     // The env var override is kept for testing (set to "0" to disable).
-    *EXSTAR_COMPAT_DEVICE_QUALIFICATION
-        .get_or_init(|| {
-            match std::env::var("ZLUDA_EXSTAR_DEVICE_QUALIFICATION_COMPAT") {
-                Ok(v) if v == "0" => false,
-                _ => true, // default ON
-            }
-        })
+    *EXSTAR_COMPAT_DEVICE_QUALIFICATION.get_or_init(|| {
+        match std::env::var("ZLUDA_EXSTAR_DEVICE_QUALIFICATION_COMPAT") {
+            Ok(v) if v == "0" => false,
+            _ => true, // default ON
+        }
+    })
 }
 
 pub(crate) fn next_launch_sequence() -> u64 {

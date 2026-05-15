@@ -433,10 +433,7 @@ pub(crate) unsafe fn copy_2d_async_v2(memcpy: hip_Memcpy2D, stream: hipStream_t)
     Ok(())
 }
 
-pub(crate) unsafe fn copy_2d_async_v2_ptsz(
-    memcpy: hip_Memcpy2D,
-    stream: hipStream_t,
-) -> CUresult {
+pub(crate) unsafe fn copy_2d_async_v2_ptsz(memcpy: hip_Memcpy2D, stream: hipStream_t) -> CUresult {
     copy_2d_async_v2(memcpy, stream)
 }
 

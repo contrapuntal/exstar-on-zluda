@@ -1,7 +1,9 @@
 #![cfg(target_os = "windows")]
 
 mod exstar;
-use exstar::prestartcheck::{exstar_patch_prestartcheck_module, exstar_should_suppress_prestartcheck_timer};
+use exstar::prestartcheck::{
+    exstar_patch_prestartcheck_module, exstar_should_suppress_prestartcheck_timer,
+};
 use exstar::trace::{
     env_flag, exstar_appui_trace_enabled, exstar_exe_trace_enabled, exstar_host_trace_enabled,
     exstar_host_trace_file, exstar_hub_light_trace_enabled, exstar_light_trace_enabled,
@@ -58,10 +60,10 @@ use windows_sys::Win32::System::Memory::{
     PAGE_READWRITE, PAGE_WRITECOPY,
 };
 use windows_sys::Win32::System::Threading::{
-    CreateMutexA, CreateMutexW, CreateProcessA, CreateProcessAsUserA, CreateProcessAsUserW, CreateProcessW,
-    CreateProcessWithLogonW, CreateProcessWithTokenW, ExitProcess, GetExitCodeProcess,
-    GetProcessId, GetThreadId, QueryFullProcessImageNameW, TerminateProcess as WinTerminateProcess,
-    WaitForSingleObject,
+    CreateMutexA, CreateMutexW, CreateProcessA, CreateProcessAsUserA, CreateProcessAsUserW,
+    CreateProcessW, CreateProcessWithLogonW, CreateProcessWithTokenW, ExitProcess,
+    GetExitCodeProcess, GetProcessId, GetThreadId, QueryFullProcessImageNameW,
+    TerminateProcess as WinTerminateProcess, WaitForSingleObject,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, DestroyWindow, GetClassNameW, GetForegroundWindow, GetWindowRect,
@@ -110,7 +112,8 @@ pub(crate) static EXSTAR_HOST_TRACE: OnceLock<bool> = OnceLock::new();
 pub(crate) static EXSTAR_LIGHT_TRACE: OnceLock<bool> = OnceLock::new();
 /// Stores the handle of the "EinScan-Pro.exe" duplicate-instance mutex
 /// created by the bootstrap Hub, so preserve_hub_exit can close it.
-static EXSTAR_DUPLICATE_MUTEX_HANDLE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+static EXSTAR_DUPLICATE_MUTEX_HANDLE: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
 pub(crate) static EXSTAR_HOST_TRACE_FILE: OnceLock<Option<Mutex<File>>> = OnceLock::new();
 static EXSTAR_HUB_EXIT_DELAY_MS: OnceLock<u64> = OnceLock::new();
 static EXSTAR_HUB_STARTUP_COMPAT_TIMEOUT_MS: OnceLock<u64> = OnceLock::new();
@@ -335,11 +338,11 @@ static mut QT_CORE_APPLICATION_QUIT: Option<QtStaticNoArgs> = None;
 static mut QT_CORE_APPLICATION_EXIT: Option<QtStaticIntArg> = None;
 static mut QT_APPLICATION_EXEC: Option<QtStaticIntReturn> = None;
 type QMessageBoxWarningFn = unsafe extern "system" fn(
-    *mut c_void, // parent QWidget*
+    *mut c_void,   // parent QWidget*
     *const c_void, // title QString&
     *const c_void, // text QString&
-    u32, // buttons
-    u32, // defaultButton
+    u32,           // buttons
+    u32,           // defaultButton
 ) -> u32;
 static mut QT_MESSAGEBOX_WARNING: Option<QMessageBoxWarningFn> = None;
 static mut QT_MESSAGEBOX_CRITICAL: Option<QMessageBoxWarningFn> = None;
@@ -470,7 +473,6 @@ impl DetourPaths {
             .unwrap_or(path)
     }
 }
-
 
 fn exstar_einscan_net_svr_compat_enabled() -> bool {
     *EXSTAR_EINSCAN_NET_SVR_COMPAT.get_or_init(|| env_flag("ZLUDA_EXSTAR_EINSCAN_NET_SVR_COMPAT"))
@@ -641,7 +643,10 @@ fn exstar_manager_should_skip_kill(process_name: &str, _second_sweep_id: u32) ->
         "informationCollect.exe",
         "SnSyncService.exe",
     ];
-    if core_processes.iter().any(|p| p.eq_ignore_ascii_case(process_name)) {
+    if core_processes
+        .iter()
+        .any(|p| p.eq_ignore_ascii_case(process_name))
+    {
         return true;
     }
     // Also check legacy env-var-based skip logic
@@ -692,7 +697,6 @@ fn exstar_processmg_branch_label(strings: &str) -> Option<&'static str> {
         None
     }
 }
-
 
 fn exstar_force_main_window_visible_enabled() -> bool {
     *EXSTAR_FORCE_MAIN_WINDOW_VISIBLE
@@ -779,12 +783,10 @@ fn exstar_hub_main_window_compat_active(trigger: &str) -> bool {
     exstar_hub_startup_compat_active(trigger) && exstar_on_main_window_thread()
 }
 
-
 fn exstar_skip_qttunnel_connect_hook_enabled() -> bool {
     *EXSTAR_SKIP_QTTUNNEL_CONNECT_HOOK
         .get_or_init(|| env_flag("ZLUDA_EXSTAR_SKIP_QTTUNNEL_CONNECT_HOOK"))
 }
-
 
 fn launch_targets_einscan_net_svr(launch: &HostLaunchInfo) -> bool {
     launch
@@ -1082,8 +1084,7 @@ unsafe fn log_window_transition(
         if !was_shown {
             log_exstar_host(format_args!(
                 "kind=compat action=app_window_shown title=\"{}\" hwnd={:p}",
-                title,
-                hwnd as *mut c_void
+                title, hwnd as *mut c_void
             ));
         }
         if !EXSTAR_CHILD_HUB_APP_WINDOW_FOREGROUNDED.swap(true, Ordering::SeqCst) {
@@ -1622,14 +1623,7 @@ unsafe fn log_offset_probe(
 ) {
     log_exstar_host(format_args!(
         "kind={} method={} this={:p} arg1={:p} arg2={:p} arg3={:p} arg4={:p} arg5={:p}",
-        kind,
-        label,
-        this,
-        arg1,
-        arg2,
-        arg3,
-        arg4,
-        arg5,
+        kind, label, this, arg1, arg2, arg3, arg4, arg5,
     ));
 }
 
@@ -1989,7 +1983,6 @@ fn payload_strings(payload: *const c_void) -> String {
     .unwrap_or_else(|_| "<panic>".to_string())
 }
 
-
 #[link(name = "ntdll.dll", kind = "raw-dylib")]
 unsafe extern "system" {
     fn LdrLoadDll(
@@ -2005,19 +1998,14 @@ unsafe extern "system" {
         object_information_length: u32,
         return_length: *mut u32,
     ) -> NTSTATUS;
-    fn NtTerminateProcess(
-        process_handle: HANDLE,
-        exit_status: i32,
-    ) -> NTSTATUS;
+    fn NtTerminateProcess(process_handle: HANDLE, exit_status: i32) -> NTSTATUS;
 }
 
 const OBJECT_NAME_INFORMATION_CLASS: u32 = 1;
 const OBJECT_TYPE_INFORMATION_CLASS: u32 = 2;
 
-static mut NT_TERMINATE_PROCESS: unsafe extern "system" fn(
-    HANDLE,
-    i32,
-) -> NTSTATUS = NtTerminateProcess;
+static mut NT_TERMINATE_PROCESS: unsafe extern "system" fn(HANDLE, i32) -> NTSTATUS =
+    NtTerminateProcess;
 
 static mut LDR_LOAD_DLL: unsafe extern "system" fn(
     LPCWSTR,
@@ -2077,7 +2065,14 @@ unsafe extern "system" fn ZludaGetUserDefaultLocaleName(
 
     if is_scan && cchlocalename >= 6 {
         // Return "en-US" directly, bypassing the Windows API that hangs
-        let locale: [u16; 6] = [b'e' as u16, b'n' as u16, b'-' as u16, b'U' as u16, b'S' as u16, 0];
+        let locale: [u16; 6] = [
+            b'e' as u16,
+            b'n' as u16,
+            b'-' as u16,
+            b'U' as u16,
+            b'S' as u16,
+            0,
+        ];
         std::ptr::copy_nonoverlapping(locale.as_ptr(), lplocalename, 6);
         if exstar_trace_logging_enabled() {
             log_exstar_host(format_args!(
@@ -2139,10 +2134,7 @@ unsafe fn dxgi_write_nvidia_description(desc: *mut [u16; 128]) {
     std::ptr::copy_nonoverlapping(wide.as_ptr(), (*desc).as_mut_ptr(), len);
 }
 
-unsafe extern "system" fn ZludaDxgiGetDesc(
-    this: *mut c_void,
-    desc: *mut DxgiAdapterDesc,
-) -> i32 {
+unsafe extern "system" fn ZludaDxgiGetDesc(this: *mut c_void, desc: *mut DxgiAdapterDesc) -> i32 {
     let result = if let Some(original) = DXGI_GETDESC_ORIGINAL {
         original(this, desc)
     } else {
@@ -2162,10 +2154,7 @@ unsafe extern "system" fn ZludaDxgiGetDesc(
     result
 }
 
-unsafe extern "system" fn ZludaDxgiGetDesc1(
-    this: *mut c_void,
-    desc: *mut DxgiAdapterDesc1,
-) -> i32 {
+unsafe extern "system" fn ZludaDxgiGetDesc1(this: *mut c_void, desc: *mut DxgiAdapterDesc1) -> i32 {
     let result = if let Some(original) = DXGI_GETDESC1_ORIGINAL {
         original(this, desc)
     } else {
@@ -2192,9 +2181,8 @@ unsafe fn dxgi_hook_adapter_vtable(factory: *mut c_void) {
     }
     // IDXGIFactory vtable: index 7 = EnumAdapters
     let factory_vtable = *(factory as *const *const *const c_void);
-    let enum_adapters: unsafe extern "system" fn(
-        *mut c_void, u32, *mut *mut c_void,
-    ) -> i32 = std::mem::transmute(*factory_vtable.add(7));
+    let enum_adapters: unsafe extern "system" fn(*mut c_void, u32, *mut *mut c_void) -> i32 =
+        std::mem::transmute(*factory_vtable.add(7));
 
     let mut adapter: *mut c_void = ptr::null_mut();
     let hr = enum_adapters(factory, 0, &mut adapter);
@@ -2272,10 +2260,14 @@ static mut LOCK_FILE_EX: LockFileExFn = lock_file_ex_stub;
 
 unsafe extern "system" fn lock_file_ex_stub(
     _hfile: windows_sys::Win32::Foundation::HANDLE,
-    _dwflags: u32, _dwreserved: u32,
-    _nnumberofbytestolocklow: u32, _nnumberofbytestolockhigh: u32,
+    _dwflags: u32,
+    _dwreserved: u32,
+    _nnumberofbytestolocklow: u32,
+    _nnumberofbytestolockhigh: u32,
     _lpoverlapped: *mut c_void,
-) -> BOOL { 1 }
+) -> BOOL {
+    1
+}
 
 static mut CREATE_MUTEX_A: unsafe extern "system" fn(
     lpmutexattributes: *const SECURITY_ATTRIBUTES,
@@ -2456,22 +2448,40 @@ unsafe extern "system" fn ZludaLoadLibraryW(file_name: LPCWSTR) -> HMODULE {
         static IS_SCAN: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0); // 0=unchecked, 1=no, 2=yes
         let v = IS_SCAN.load(Ordering::Relaxed);
         if v == 0 {
-            let yes = exstar_current_exe("LoadLibraryW").map(|(_, n)| n.eq_ignore_ascii_case("scanservice.exe")).unwrap_or(false);
+            let yes = exstar_current_exe("LoadLibraryW")
+                .map(|(_, n)| n.eq_ignore_ascii_case("scanservice.exe"))
+                .unwrap_or(false);
             IS_SCAN.store(if yes { 2 } else { 1 }, Ordering::Relaxed);
             yes
-        } else { v == 2 }
+        } else {
+            v == 2
+        }
     };
     if is_scanservice && exstar_host_trace_enabled() {
-        let dll_name = if file_name.is_null() { "<null>".to_string() } else { decode_pcwstr(file_name as PCWSTR).unwrap_or_default() };
-        log_exstar_host(format_args!("kind=scanservice_loadlib method=LoadLibraryW dll={}", dll_name));
+        let dll_name = if file_name.is_null() {
+            "<null>".to_string()
+        } else {
+            decode_pcwstr(file_name as PCWSTR).unwrap_or_default()
+        };
+        log_exstar_host(format_args!(
+            "kind=scanservice_loadlib method=LoadLibraryW dll={}",
+            dll_name
+        ));
     }
     let result = LOAD_LIBRARY_W(DetourPaths::utf16_override(
         &*&raw const DETOUR_PATHS,
         file_name,
     ));
     if is_scanservice && exstar_host_trace_enabled() {
-        let dll_name = if file_name.is_null() { "<null>".to_string() } else { decode_pcwstr(file_name as PCWSTR).unwrap_or_default() };
-        log_exstar_host(format_args!("kind=scanservice_loadlib method=LoadLibraryW_return dll={} result={:p}", dll_name, result as *const c_void));
+        let dll_name = if file_name.is_null() {
+            "<null>".to_string()
+        } else {
+            decode_pcwstr(file_name as PCWSTR).unwrap_or_default()
+        };
+        log_exstar_host(format_args!(
+            "kind=scanservice_loadlib method=LoadLibraryW_return dll={} result={:p}",
+            dll_name, result as *const c_void
+        ));
     }
     // After dxgi.dll is loaded, hook CreateDXGIFactory to spoof GPU vendor
     if !result.is_null() && !file_name.is_null() {
@@ -2653,8 +2663,7 @@ unsafe fn exstar_preserve_hub_until_related_manager_exit() {
     // Release the "EinScan-Pro.exe" duplicate-instance mutex before entering
     // the preserve loop. The child Hub (launched by the manager) checks this
     // mutex and shows "Software is unable to repeat opening" if it exists.
-    let mutex_handle = EXSTAR_DUPLICATE_MUTEX_HANDLE
-        .swap(0, std::sync::atomic::Ordering::Relaxed);
+    let mutex_handle = EXSTAR_DUPLICATE_MUTEX_HANDLE.swap(0, std::sync::atomic::Ordering::Relaxed);
     if mutex_handle != 0 {
         windows_sys::Win32::System::Threading::ReleaseMutex(mutex_handle as _);
         CloseHandle(HANDLE(mutex_handle as *mut c_void));
@@ -2677,8 +2686,8 @@ unsafe fn exstar_preserve_hub_until_related_manager_exit() {
         windows_sys::Win32::UI::WindowsAndMessaging::MsgWaitForMultipleObjectsEx(
             0,
             ptr::null(),
-            50, // 50ms timeout
-            0x04FF, // QS_ALLINPUT
+            50,              // 50ms timeout
+            0x04FF,          // QS_ALLINPUT
             0x0002 | 0x0004, // MWMO_ALERTABLE | MWMO_INPUTAVAILABLE
         );
         windows_sys::Win32::System::Threading::SleepEx(0, 1); // process pending APCs
@@ -2697,7 +2706,9 @@ unsafe fn exstar_preserve_hub_until_related_manager_exit() {
     }
     log_exstar_host(format_args!(
         "kind=compat action=preserve_hub_exit status=end reason={} manager_pid={} elapsed_ms={}",
-        reason, manager_pid, start.elapsed().as_millis()
+        reason,
+        manager_pid,
+        start.elapsed().as_millis()
     ));
 }
 
@@ -2706,12 +2717,15 @@ unsafe extern "system" fn ZludaSleepEx(milliseconds: u32, alertable: BOOL) -> u3
     // For scanservice.exe: reduce QLockFile-related sleeps to 1ms (not 0 — 0 causes
     // other timing issues). Only applies to short sleeps during the first 30 seconds
     // of process startup.
-    static SCANSERVICE_DETECTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    static SCANSERVICE_DETECTED: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
     static CHECKED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     static START_TIME: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
     if !CHECKED.load(Ordering::Relaxed) {
         CHECKED.store(true, Ordering::Relaxed);
-        let exe_name = exstar_current_exe("SleepEx").map(|(_, n)| n).unwrap_or_default();
+        let exe_name = exstar_current_exe("SleepEx")
+            .map(|(_, n)| n)
+            .unwrap_or_default();
         if exe_name.eq_ignore_ascii_case("scanservice.exe") {
             SCANSERVICE_DETECTED.store(true, Ordering::Relaxed);
             let _ = START_TIME.set(Instant::now());
@@ -2720,8 +2734,11 @@ unsafe extern "system" fn ZludaSleepEx(milliseconds: u32, alertable: BOOL) -> u3
     // Only modify short sleeps (QLockFile uses ~100ms) in scanservice.exe
     // during the first 30 seconds of startup
     if SCANSERVICE_DETECTED.load(Ordering::Relaxed)
-        && milliseconds >= 50 && milliseconds <= 200
-        && START_TIME.get().map_or(false, |t| t.elapsed().as_secs() < 30)
+        && milliseconds >= 50
+        && milliseconds <= 200
+        && START_TIME
+            .get()
+            .map_or(false, |t| t.elapsed().as_secs() < 30)
     {
         // Reduce to 1ms — lets the QLockFile timeout expire in ~150ms instead of ~15s
         return SLEEP_EX(1, alertable);
@@ -2743,7 +2760,14 @@ unsafe extern "system" fn ZludaLockFileEx(
     // QSettings file lock held by the bootstrap Hub during Qt init.
     const LOCKFILE_FAIL_IMMEDIATELY: u32 = 0x00000001;
     let modified_flags = dwflags | LOCKFILE_FAIL_IMMEDIATELY;
-    let result = LOCK_FILE_EX(hfile, modified_flags, dwreserved, nnumberofbytestolocklow, nnumberofbytestolockhigh, lpoverlapped);
+    let result = LOCK_FILE_EX(
+        hfile,
+        modified_flags,
+        dwreserved,
+        nnumberofbytestolocklow,
+        nnumberofbytestolockhigh,
+        lpoverlapped,
+    );
     if result == 0 && (dwflags & LOCKFILE_FAIL_IMMEDIATELY) == 0 {
         // The original call wanted to block, but we made it fail immediately.
         // Return success anyway — the file write might be slightly unsafe but
@@ -2768,12 +2792,14 @@ unsafe fn close_non_essential_file_handles(reason: &str, manager_pid: u32) {
 
     // NtQueryObject to get handle type
     type NtQueryObjectFn = unsafe extern "system" fn(
-        handle: *mut c_void, info_class: u32, buffer: *mut c_void,
-        length: u32, result_length: *mut u32,
+        handle: *mut c_void,
+        info_class: u32,
+        buffer: *mut c_void,
+        length: u32,
+        result_length: *mut u32,
     ) -> i32;
-    let nt_query_object: Option<NtQueryObjectFn> = std::mem::transmute(
-        GetProcAddress(ntdll as _, c"NtQueryObject".as_ptr().cast())
-    );
+    let nt_query_object: Option<NtQueryObjectFn> =
+        std::mem::transmute(GetProcAddress(ntdll as _, c"NtQueryObject".as_ptr().cast()));
     let Some(query_object) = nt_query_object else {
         log_exstar_host(format_args!(
             "kind=compat action=close_file_handles status=skip reason=no_NtQueryObject"
@@ -2783,13 +2809,13 @@ unsafe fn close_non_essential_file_handles(reason: &str, manager_pid: u32) {
 
     let mut closed_count = 0u32;
     let stdin_handle = windows_sys::Win32::System::Console::GetStdHandle(
-        windows_sys::Win32::System::Console::STD_INPUT_HANDLE
+        windows_sys::Win32::System::Console::STD_INPUT_HANDLE,
     );
     let stdout_handle = windows_sys::Win32::System::Console::GetStdHandle(
-        windows_sys::Win32::System::Console::STD_OUTPUT_HANDLE
+        windows_sys::Win32::System::Console::STD_OUTPUT_HANDLE,
     );
     let stderr_handle = windows_sys::Win32::System::Console::GetStdHandle(
-        windows_sys::Win32::System::Console::STD_ERROR_HANDLE
+        windows_sys::Win32::System::Console::STD_ERROR_HANDLE,
     );
 
     // Try handle values 4 to 4096 (step 4 since handles are multiples of 4)
@@ -2806,16 +2832,29 @@ unsafe fn close_non_essential_file_handles(reason: &str, manager_pid: u32) {
         let mut buf = [0u8; 1024];
         let mut result_len: u32 = 0;
         let status = query_object(
-            handle, 2, buf.as_mut_ptr() as *mut c_void, buf.len() as u32, &mut result_len
+            handle,
+            2,
+            buf.as_mut_ptr() as *mut c_void,
+            buf.len() as u32,
+            &mut result_len,
         );
-        if status != 0 { continue; } // Invalid handle or error
+        if status != 0 {
+            continue;
+        } // Invalid handle or error
 
         // OBJECT_TYPE_INFORMATION starts with UNICODE_STRING (Length: u16, MaxLength: u16, Buffer: *wchar)
-        if result_len < 8 { continue; }
+        if result_len < 8 {
+            continue;
+        }
         let type_name_len = u16::from_le_bytes([buf[0], buf[1]]) as usize / 2;
-        let type_name_ptr = u64::from_le_bytes([buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]]) as *const u16;
-        if type_name_ptr.is_null() || type_name_len == 0 { continue; }
-        let type_name = String::from_utf16_lossy(std::slice::from_raw_parts(type_name_ptr, type_name_len));
+        let type_name_ptr = u64::from_le_bytes([
+            buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15],
+        ]) as *const u16;
+        if type_name_ptr.is_null() || type_name_len == 0 {
+            continue;
+        }
+        let type_name =
+            String::from_utf16_lossy(std::slice::from_raw_parts(type_name_ptr, type_name_len));
 
         if type_name == "File" {
             // This is a file handle — close it to release locks
@@ -2857,9 +2896,7 @@ unsafe fn exstar_preserve_child_hub_after_dialog() {
         }
         thread::sleep(Duration::from_millis(50));
         // Log a heartbeat every 60 seconds
-        if start.elapsed().as_secs() % 60 == 0
-            && start.elapsed().as_millis() % 60000 < 100
-        {
+        if start.elapsed().as_secs() % 60 == 0 && start.elapsed().as_millis() % 60000 < 100 {
             log_exstar_host(format_args!(
                 "kind=compat action=preserve_child_hub status=alive elapsed_ms={}",
                 start.elapsed().as_millis()
@@ -2916,9 +2953,9 @@ unsafe extern "system" fn ZludaExitProcess(exit_code: u32) -> ! {
                 if is_child_hub {
                     let startup_compat_active =
                         exstar_hub_startup_compat_active("ExitProcessPreserveChildHub");
-                    let real_app_window_shown =
-                        EXSTAR_CHILD_HUB_APP_WINDOW_SHOWN.load(Ordering::SeqCst)
-                            || exstar_child_hub_real_app_window_exists();
+                    let real_app_window_shown = EXSTAR_CHILD_HUB_APP_WINDOW_SHOWN
+                        .load(Ordering::SeqCst)
+                        || exstar_child_hub_real_app_window_exists();
                     if exstar_should_preserve_child_hub_exit(
                         startup_compat_active,
                         real_app_window_shown,
@@ -2987,13 +3024,11 @@ unsafe extern "system" fn ZludaExitThread(exit_code: u32) -> ! {
         let exec_result = QT_APPLICATION_EXEC.map(|original| original()).unwrap_or(-1);
         log_exstar_host(format_args!(
             "kind=compat action=force_child_qapplication_exec status=return result={} thread_id={}",
-            exec_result,
-            current_thread_id
+            exec_result, current_thread_id
         ));
     }
     EXIT_THREAD_FN(exit_code)
 }
-
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn ZludaTerminateProcess(
@@ -3107,7 +3142,8 @@ unsafe extern "system" fn ZludaNtTerminateProcess(
     process_handle: HANDLE,
     exit_status: i32,
 ) -> NTSTATUS {
-    let is_self = process_handle == HANDLE(ptr::null_mut()) || process_handle == HANDLE(-1isize as _);
+    let is_self =
+        process_handle == HANDLE(ptr::null_mut()) || process_handle == HANDLE(-1isize as _);
     let target_pid = if is_self {
         GetCurrentProcessId()
     } else {
@@ -4157,9 +4193,7 @@ unsafe extern "system" fn zluda_qdialog_exec(this: *mut c_void) -> i32 {
             this
         ));
     }
-    QT_DIALOG_EXEC
-        .map(|original| original(this))
-        .unwrap_or(0)
+    QT_DIALOG_EXEC.map(|original| original(this)).unwrap_or(0)
 }
 
 unsafe extern "system" fn zluda_qmessagebox_critical(
@@ -4296,10 +4330,7 @@ unsafe extern "system" fn zluda_sn3dbox_plugin_instance() -> *mut c_void {
     result
 }
 
-unsafe extern "system" fn zluda_sn3dbox_application_init(
-    this: *mut c_void,
-    parent: *mut c_void,
-) {
+unsafe extern "system" fn zluda_sn3dbox_application_init(this: *mut c_void, parent: *mut c_void) {
     log_exstar_host(format_args!(
         "kind=sn3dbox method=Sn3DApplication::init this={:p} parent={:p}[{}]",
         this,
@@ -4334,8 +4365,7 @@ unsafe extern "system" fn zluda_sn3dbox_application_load(
     }
     log_exstar_host(format_args!(
         "kind=sn3dbox method=Sn3DApplication::load_return this={:p} path_text=\"{}\"",
-        this,
-        path_text
+        this, path_text
     ));
 }
 
@@ -4364,8 +4394,7 @@ unsafe extern "system" fn zluda_sn3dbox_ui_set_qml_item(this: *mut c_void, item:
     }
     log_exstar_host(format_args!(
         "kind=sn3dbox method=Sn3DUICpp::setQmlItem_return this={:p} item={:p}",
-        this,
-        item
+        this, item
     ));
 }
 
@@ -4377,8 +4406,7 @@ unsafe extern "system" fn zluda_sn3dbox_ui_start(this: *mut c_void) -> i32 {
     let result = SN3DBOX_UI_START.map(|original| original(this)).unwrap_or(0);
     log_exstar_host(format_args!(
         "kind=sn3dbox method=Sn3DUICpp::start_return this={:p} result={}",
-        this,
-        result
+        this, result
     ));
     result
 }
@@ -4391,8 +4419,7 @@ unsafe extern "system" fn zluda_sn3dbox_ui_stop(this: *mut c_void) -> i32 {
     let result = SN3DBOX_UI_STOP.map(|original| original(this)).unwrap_or(0);
     log_exstar_host(format_args!(
         "kind=sn3dbox method=Sn3DUICpp::stop_return this={:p} result={}",
-        this,
-        result
+        this, result
     ));
     result
 }
@@ -5225,8 +5252,12 @@ unsafe extern "system" fn zluda_scanservice_connect_and_register_iat(
 }
 
 unsafe extern "system" fn zluda_scanservice_pre_exec(
-    this: *mut c_void, arg1: *mut c_void, arg2: *mut c_void,
-    arg3: *mut c_void, arg4: *mut c_void, arg5: *mut c_void,
+    this: *mut c_void,
+    arg1: *mut c_void,
+    arg2: *mut c_void,
+    arg3: *mut c_void,
+    arg4: *mut c_void,
+    arg5: *mut c_void,
 ) -> usize {
     log_exstar_host(format_args!(
         "kind=scanservice hook=pre_exec_4e4b_reached (about to call QCoreApplication::exec)"
@@ -5237,8 +5268,12 @@ unsafe extern "system" fn zluda_scanservice_pre_exec(
 }
 
 unsafe extern "system" fn zluda_scanservice_early_check(
-    this: *mut c_void, arg1: *mut c_void, arg2: *mut c_void,
-    arg3: *mut c_void, arg4: *mut c_void, arg5: *mut c_void,
+    this: *mut c_void,
+    arg1: *mut c_void,
+    arg2: *mut c_void,
+    arg3: *mut c_void,
+    arg4: *mut c_void,
+    arg5: *mut c_void,
 ) -> usize {
     log_exstar_host(format_args!(
         "kind=scanservice hook=early_check_44ec_reached this={:p} (cmp [rsp+38h], 3)",
@@ -5298,7 +5333,8 @@ unsafe extern "system" fn zluda_scanservice_exe_entry_6a40(
     // The Detours hook on Sn3DProcessPlugin+0x4c50 is attached but never fires for scanservice.
     // Direct IAT patching bypasses Detours entirely.
     {
-        let exe_base = windows_sys::Win32::System::LibraryLoader::GetModuleHandleW(ptr::null()) as usize;
+        let exe_base =
+            windows_sys::Win32::System::LibraryLoader::GetModuleHandleW(ptr::null()) as usize;
         let iat_entry = (exe_base + 0x9420) as *mut *mut c_void;
         if memory_readable(iat_entry as *const c_void, 8) {
             let original_fn = *iat_entry;
@@ -5328,7 +5364,8 @@ unsafe extern "system" fn zluda_scanservice_exe_entry_6a40(
     // Sn3DDeviceEinStar.dll is loaded late (during Qt init, not at WinMain entry).
     // Spawn a background thread that polls for it and hooks stop() when it appears.
     unsafe extern "system" fn device_hook_poller(_: *mut c_void) -> u32 {
-        for _ in 0..60 { // poll for 30 seconds
+        for _ in 0..60 {
+            // poll for 30 seconds
             let device_dll = GetModuleHandleA(c"Sn3DDeviceEinStar.dll".as_ptr().cast());
             if !device_dll.is_null() {
                 detour_exstar_device_einstar(device_dll as *mut c_void);
@@ -5383,9 +5420,12 @@ unsafe fn scanservice_watchdog(main_thread_id: u32) {
     // Write to our own file — the shared host log might not be thread-safe
     let pid = GetCurrentProcessId();
     let current_thread_id = GetCurrentThreadId();
-    let watchdog_path = std::env::temp_dir()
-        .join(format!("zluda_scanservice_watchdog_{}.log", pid));
-    let _ = std::fs::write(&watchdog_path, format!("watchdog_start pid={} thread_id={}\n", pid, main_thread_id));
+    let watchdog_path =
+        std::env::temp_dir().join(format!("zluda_scanservice_watchdog_{}.log", pid));
+    let _ = std::fs::write(
+        &watchdog_path,
+        format!("watchdog_start pid={} thread_id={}\n", pid, main_thread_id),
+    );
     // No sleep — process dies within milliseconds
     let mut log_lines = Vec::new();
     log_lines.push(format!(
@@ -5409,11 +5449,17 @@ unsafe fn scanservice_watchdog(main_thread_id: u32) {
     let _ = std::fs::write(&watchdog_path, log_lines.join("\n"));
 }
 
-fn watchdog_thread_order(main_thread_id: u32, current_thread_id: u32, thread_ids: &[u32]) -> Vec<u32> {
+fn watchdog_thread_order(
+    main_thread_id: u32,
+    current_thread_id: u32,
+    thread_ids: &[u32],
+) -> Vec<u32> {
     let mut ordered = Vec::new();
     if main_thread_id != 0
         && main_thread_id != current_thread_id
-        && thread_ids.iter().any(|&thread_id| thread_id == main_thread_id)
+        && thread_ids
+            .iter()
+            .any(|&thread_id| thread_id == main_thread_id)
     {
         ordered.push(main_thread_id);
     }
@@ -5450,11 +5496,8 @@ unsafe fn collect_process_thread_ids() -> Vec<u32> {
 }
 
 unsafe fn append_watchdog_thread_dump(log_lines: &mut Vec<String>, thread_id: u32) {
-    let thread_handle = windows_sys::Win32::System::Threading::OpenThread(
-        0x0002 | 0x0008 | 0x0040,
-        0,
-        thread_id,
-    );
+    let thread_handle =
+        windows_sys::Win32::System::Threading::OpenThread(0x0002 | 0x0008 | 0x0040, 0, thread_id);
     if thread_handle.is_null() {
         log_lines.push(format!(
             "phase=thread_error thread_id={} reason=open_thread_failed last_error={}",
@@ -5477,7 +5520,10 @@ unsafe fn append_watchdog_thread_dump(log_lines: &mut Vec<String>, thread_id: u3
     ctx.ContextFlags = 0x00100000 | 0x0000000F;
     let kernel32 = GetModuleHandleA(c"kernel32.dll".as_ptr().cast());
     let get_thread_ctx: unsafe extern "system" fn(*mut c_void, *mut CONTEXT) -> i32 =
-        std::mem::transmute(GetProcAddress(kernel32 as _, c"GetThreadContext".as_ptr().cast()));
+        std::mem::transmute(GetProcAddress(
+            kernel32 as _,
+            c"GetThreadContext".as_ptr().cast(),
+        ));
     let success = get_thread_ctx(thread_handle, &mut ctx);
     if success != 0 {
         log_lines.push(format!(
@@ -5507,10 +5553,14 @@ unsafe fn append_watchdog_thread_dump(log_lines: &mut Vec<String>, thread_id: u3
             *mut u64,
             *mut c_void,
         ) -> *mut c_void;
-        let lookup_fn: Option<RtlLookupFunctionEntryFn> =
-            std::mem::transmute(GetProcAddress(ntdll as _, c"RtlLookupFunctionEntry".as_ptr().cast()));
-        let unwind_fn: Option<RtlVirtualUnwindFn> =
-            std::mem::transmute(GetProcAddress(ntdll as _, c"RtlVirtualUnwind".as_ptr().cast()));
+        let lookup_fn: Option<RtlLookupFunctionEntryFn> = std::mem::transmute(GetProcAddress(
+            ntdll as _,
+            c"RtlLookupFunctionEntry".as_ptr().cast(),
+        ));
+        let unwind_fn: Option<RtlVirtualUnwindFn> = std::mem::transmute(GetProcAddress(
+            ntdll as _,
+            c"RtlVirtualUnwind".as_ptr().cast(),
+        ));
         if let (Some(lookup), Some(unwind)) = (lookup_fn, unwind_fn) {
             let mut unwind_ctx = ctx;
             for i in 0..20 {
@@ -5558,7 +5608,8 @@ unsafe fn append_watchdog_thread_dump(log_lines: &mut Vec<String>, thread_id: u3
                 let result = windows_sys::Win32::System::Memory::VirtualQuery(
                     stack_addr as *const c_void,
                     &mut info,
-                    std::mem::size_of::<windows_sys::Win32::System::Memory::MEMORY_BASIC_INFORMATION>(),
+                    std::mem::size_of::<windows_sys::Win32::System::Memory::MEMORY_BASIC_INFORMATION>(
+                    ),
                 );
                 if result == 0 {
                     break;
@@ -5605,7 +5656,11 @@ unsafe fn identify_module(addr: *const c_void) -> String {
     if success == 0 || h_module.is_null() {
         return String::new();
     }
-    let len = windows_sys::Win32::System::LibraryLoader::GetModuleFileNameW(h_module, module_name.as_mut_ptr(), 260);
+    let len = windows_sys::Win32::System::LibraryLoader::GetModuleFileNameW(
+        h_module,
+        module_name.as_mut_ptr(),
+        260,
+    );
     if len == 0 {
         return format!("0x{:x}", h_module as u64);
     }
@@ -5818,10 +5873,7 @@ unsafe extern "system" fn zluda_exstar_exe_a6e0(
     let is_child_hub = env::args().any(|a| a == "@#$");
     log_exstar_host(format_args!(
         "kind=exe method=guard@0xa6e0 result={} is_child_hub={} this={:p} arg1={:p}",
-        result,
-        is_child_hub,
-        this,
-        arg1
+        result, is_child_hub, this, arg1
     ));
     if is_child_hub && (result & 0xFF) == 0 {
         log_exstar_host(format_args!(
@@ -7108,18 +7160,17 @@ unsafe fn detour_exstar_appui(handle: *mut c_void) -> Option<()> {
     if let hash_map::Entry::Occupied(_) = detours.entry(handle_key) {
         return Some(());
     }
-    let probes = [
-        (
-            "handleShowPassport_4dd96",
-            0x4DD96usize,
-            &[
-                0x41u8, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8b, 0xec, 0x48, 0x83, 0xec, 0x70, 0x48, 0xc7, 0x45,
-                0xc0, 0xfe, 0xff, 0xff, 0xff, 0x48, 0x89, 0x58, 0x08, 0x48, 0x89, 0x70, 0x18, 0x48, 0x89, 0x78,
-            ] as &[u8],
-            &raw mut APPUI_HANDLE_SHOW_PASSPORT,
-            zluda_appui_handle_show_passport as *mut c_void,
-        ),
-    ];
+    let probes = [(
+        "handleShowPassport_4dd96",
+        0x4DD96usize,
+        &[
+            0x41u8, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8b, 0xec, 0x48, 0x83, 0xec, 0x70, 0x48,
+            0xc7, 0x45, 0xc0, 0xfe, 0xff, 0xff, 0xff, 0x48, 0x89, 0x58, 0x08, 0x48, 0x89, 0x70,
+            0x18, 0x48, 0x89, 0x78,
+        ] as &[u8],
+        &raw mut APPUI_HANDLE_SHOW_PASSPORT,
+        zluda_appui_handle_show_passport as *mut c_void,
+    )];
     let mut attached_any = false;
     for (label, rva, sig, slot, detour) in probes {
         if DetourTransactionBegin() != NO_ERROR as i32 {
@@ -7171,14 +7222,20 @@ unsafe fn detour_exstar_passport(handle: *mut c_void) -> Option<()> {
         (
             "handleShowPassportCmd",
             0x3BFC1usize,
-            &[0x48u8, 0x8d, 0x8d, 0xa8, 0x00, 0x00, 0x00, 0xff, 0x15, 0xea, 0xb2, 0x01, 0x00, 0x48, 0x8b, 0xd8][..],
+            &[
+                0x48u8, 0x8d, 0x8d, 0xa8, 0x00, 0x00, 0x00, 0xff, 0x15, 0xea, 0xb2, 0x01, 0x00,
+                0x48, 0x8b, 0xd8,
+            ][..],
             &raw mut PASSPORT_HANDLE_SHOW_PASSPORT_CMD,
             zluda_passport_handle_show_passport_cmd as *mut c_void,
         ),
         (
             "handleLoginSuccess",
             0x39ED0usize,
-            &[0x40u8, 0x53, 0x48, 0x83, 0xec, 0x50, 0x48, 0xc7, 0x44, 0x24, 0x20, 0xfe, 0xff, 0xff, 0xff, 0x48][..],
+            &[
+                0x40u8, 0x53, 0x48, 0x83, 0xec, 0x50, 0x48, 0xc7, 0x44, 0x24, 0x20, 0xfe, 0xff,
+                0xff, 0xff, 0x48,
+            ][..],
             &raw mut PASSPORT_HANDLE_LOGIN_SUCCESS,
             zluda_passport_handle_login_success as *mut c_void,
         ),
@@ -7234,56 +7291,80 @@ unsafe fn detour_exstar_exe(handle: *mut c_void) -> Option<()> {
         (
             "entry_6940",
             0x6940usize,
-            &[0x48u8, 0x8b, 0xc4, 0x57, 0x48, 0x81, 0xec, 0xe0, 0x00, 0x00, 0x00, 0x48, 0xc7, 0x44, 0x24, 0x50] as &[u8],
+            &[
+                0x48u8, 0x8b, 0xc4, 0x57, 0x48, 0x81, 0xec, 0xe0, 0x00, 0x00, 0x00, 0x48, 0xc7,
+                0x44, 0x24, 0x50,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_6940,
             zluda_exstar_exe_6940 as *mut c_void,
         ),
         (
             "lambda_6dc0",
             0x6DC0usize,
-            &[0x48u8, 0x8b, 0xc4, 0x4c, 0x89, 0x48, 0x20, 0x4c, 0x89, 0x40, 0x18, 0x48, 0x89, 0x50, 0x10, 0x55] as &[u8],
+            &[
+                0x48u8, 0x8b, 0xc4, 0x4c, 0x89, 0x48, 0x20, 0x4c, 0x89, 0x40, 0x18, 0x48, 0x89,
+                0x50, 0x10, 0x55,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_6DC0,
             zluda_exstar_exe_6dc0 as *mut c_void,
         ),
         (
             "signal_slot_bc60",
             0xBC60usize,
-            &[0x48u8, 0x89, 0x6c, 0x24, 0x18, 0x56, 0x48, 0x83, 0xec, 0x40, 0x49, 0x8b, 0xe9, 0x48, 0x8b, 0xf2] as &[u8],
+            &[
+                0x48u8, 0x89, 0x6c, 0x24, 0x18, 0x56, 0x48, 0x83, 0xec, 0x40, 0x49, 0x8b, 0xe9,
+                0x48, 0x8b, 0xf2,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_BC30,
             zluda_exstar_exe_bc30 as *mut c_void,
         ),
         (
             "entry_f1c4",
             0xF1C4usize,
-            &[0x48u8, 0x89, 0x5c, 0x24, 0x08, 0x48, 0x89, 0x74, 0x24, 0x10, 0x57, 0x48, 0x83, 0xec, 0x30, 0xb9] as &[u8],
+            &[
+                0x48u8, 0x89, 0x5c, 0x24, 0x08, 0x48, 0x89, 0x74, 0x24, 0x10, 0x57, 0x48, 0x83,
+                0xec, 0x30, 0xb9,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_F0F8,
             zluda_exstar_exe_f0f8 as *mut c_void,
         ),
         (
             "wrapper_faac",
             0xFAACusize,
-            &[0x40u8, 0x53, 0x48, 0x83, 0xec, 0x20, 0x8a, 0xd9, 0xe8, 0xdf, 0x11, 0x00, 0x00, 0x33, 0xd2, 0x85] as &[u8],
+            &[
+                0x40u8, 0x53, 0x48, 0x83, 0xec, 0x20, 0x8a, 0xd9, 0xe8, 0xdf, 0x11, 0x00, 0x00,
+                0x33, 0xd2, 0x85,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_F9EC,
             zluda_exstar_exe_f9ec as *mut c_void,
         ),
         (
             "wrapper_fb84",
             0xFB84usize,
-            &[0x48u8, 0x83, 0xec, 0x28, 0xe8, 0x6f, 0xff, 0xff, 0xff, 0x48, 0xf7, 0xd8, 0x1b, 0xc0, 0xf7, 0xd8] as &[u8],
+            &[
+                0x48u8, 0x83, 0xec, 0x28, 0xe8, 0x6f, 0xff, 0xff, 0xff, 0x48, 0xf7, 0xd8, 0x1b,
+                0xc0, 0xf7, 0xd8,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_FAC4,
             zluda_exstar_exe_fac4 as *mut c_void,
         ),
         (
             "init_check_f780",
             0xF780usize,
-            &[0x48u8, 0x83, 0xec, 0x28, 0xe8, 0x0f, 0x15, 0x00, 0x00, 0x85, 0xc0, 0x74, 0x21, 0x65, 0x48, 0x8b] as &[u8],
+            &[
+                0x48u8, 0x83, 0xec, 0x28, 0xe8, 0x0f, 0x15, 0x00, 0x00, 0x85, 0xc0, 0x74, 0x21,
+                0x65, 0x48, 0x8b,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_F6C0,
             zluda_exstar_exe_f6c0 as *mut c_void,
         ),
         (
             "guard_a6e0",
             0xA6E0usize,
-            &[0x40u8, 0x55, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24, 0x10, 0xee] as &[u8],
+            &[
+                0x40u8, 0x55, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac,
+                0x24, 0x10, 0xee,
+            ] as &[u8],
             &raw mut EXSTAR_EXE_A6E0,
             zluda_exstar_exe_a6e0 as *mut c_void,
         ),
@@ -7345,21 +7426,32 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     let host_trace_enabled = exstar_host_trace_enabled();
     let light_trace_enabled = exstar_light_trace_enabled();
     let keep_second_sweep_hooks = exstar_manager_skip_second_sweep_enabled() || light_trace_enabled;
-    let mut probes: Vec<(&'static str, usize, &'static [u8], *mut Option<OffsetTraceFn>, *mut c_void)> =
-        Vec::new();
+    let mut probes: Vec<(
+        &'static str,
+        usize,
+        &'static [u8],
+        *mut Option<OffsetTraceFn>,
+        *mut c_void,
+    )> = Vec::new();
     if host_trace_enabled || keep_second_sweep_hooks {
         probes.extend([
             (
                 "kill_all_e1a0",
                 0xE1A0usize,
-                &[0x48u8, 0x8b, 0xc4, 0x55, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0x68, 0xa8][..],
+                &[
+                    0x48u8, 0x8b, 0xc4, 0x55, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48,
+                    0x8d, 0x68, 0xa8,
+                ][..],
                 &raw mut PROCESS_MANAGER_EXE_KILL_ALL_E1A0,
                 zluda_process_manager_exe_kill_all_e1a0 as *mut c_void,
             ),
             (
                 "load_config_ef30",
                 0xEF30usize,
-                &[0x40u8, 0x55, 0x56, 0x57, 0x48, 0x81, 0xec, 0xa0, 0x00, 0x00, 0x00, 0x48, 0xc7, 0x44, 0x24, 0x28][..],
+                &[
+                    0x40u8, 0x55, 0x56, 0x57, 0x48, 0x81, 0xec, 0xa0, 0x00, 0x00, 0x00, 0x48, 0xc7,
+                    0x44, 0x24, 0x28,
+                ][..],
                 &raw mut PROCESS_MANAGER_EXE_LOAD_CONFIG_EF30,
                 zluda_process_manager_exe_load_config_ef30 as *mut c_void,
             ),
@@ -7368,7 +7460,10 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     probes.push((
         "kill_one_e560",
         0xE560usize,
-        &[0x40u8, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24][..],
+        &[
+            0x40u8, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d,
+            0xac, 0x24,
+        ][..],
         &raw mut PROCESS_MANAGER_EXE_KILL_ONE_E560,
         zluda_process_manager_exe_kill_one_e560 as *mut c_void,
     ));
@@ -7379,7 +7474,10 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
     probes.push((
         "env_detect_5e30",
         0x5E30usize,
-        &[0x48u8, 0x8b, 0xc4, 0x55, 0x48, 0x8d, 0x68, 0xd8, 0x48, 0x81, 0xec, 0x20, 0x01, 0x00, 0x00, 0x48][..],
+        &[
+            0x48u8, 0x8b, 0xc4, 0x55, 0x48, 0x8d, 0x68, 0xd8, 0x48, 0x81, 0xec, 0x20, 0x01, 0x00,
+            0x00, 0x48,
+        ][..],
         &raw mut PROCESS_MANAGER_CHECK_OPENGL,
         zluda_process_manager_check_opengl as *mut c_void,
     ));
@@ -7387,7 +7485,10 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
         probes.push((
             "launch_f5f0",
             0xF5F0usize,
-            &[0x40u8, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8d, 0xac, 0x24][..],
+            &[
+                0x40u8, 0x55, 0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48,
+                0x8d, 0xac, 0x24,
+            ][..],
             &raw mut PROCESS_MANAGER_EXE_F5F0,
             zluda_process_manager_exe_f5f0 as *mut c_void,
         ));
@@ -7431,29 +7532,45 @@ unsafe fn detour_process_manager_exe(handle: *mut c_void) -> Option<()> {
 }
 
 unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
-    log_exstar_host(format_args!("kind=scanservice hook=start handle={:p}", handle));
+    log_exstar_host(format_args!(
+        "kind=scanservice hook=start handle={:p}",
+        handle
+    ));
     let Some((_, current_exe_name)) = exstar_current_exe("scanservice_trace") else {
-        log_exstar_host(format_args!("kind=scanservice hook=abort reason=current_exe_failed"));
+        log_exstar_host(format_args!(
+            "kind=scanservice hook=abort reason=current_exe_failed"
+        ));
         return Some(());
     };
     if !current_exe_name.eq_ignore_ascii_case("scanservice.exe") {
-        log_exstar_host(format_args!("kind=scanservice hook=abort reason=wrong_exe name={}", current_exe_name));
+        log_exstar_host(format_args!(
+            "kind=scanservice hook=abort reason=wrong_exe name={}",
+            current_exe_name
+        ));
         return Some(());
     }
     let Some(mut detours) = exstar_exe_detours().lock().ok() else {
-        log_exstar_host(format_args!("kind=scanservice hook=abort reason=lock_poisoned"));
+        log_exstar_host(format_args!(
+            "kind=scanservice hook=abort reason=lock_poisoned"
+        ));
         return None;
     };
     let handle_key = (handle as usize) ^ 0x6A40usize;
     if let hash_map::Entry::Occupied(_) = detours.entry(handle_key) {
-        log_exstar_host(format_args!("kind=scanservice hook=abort reason=already_occupied handle_key={:x}", handle_key));
+        log_exstar_host(format_args!(
+            "kind=scanservice hook=abort reason=already_occupied handle_key={:x}",
+            handle_key
+        ));
         return Some(());
     }
     let probes = [
         (
             "entry_6a40",
             0x6A40usize,
-            &[0x48u8, 0x83, 0xec, 0x28, 0xe8, 0xa3, 0x0a, 0x00, 0x00, 0x48, 0x83, 0xc4, 0x28, 0xe9, 0xfe, 0xfd][..],
+            &[
+                0x48u8, 0x83, 0xec, 0x28, 0xe8, 0xa3, 0x0a, 0x00, 0x00, 0x48, 0x83, 0xc4, 0x28,
+                0xe9, 0xfe, 0xfd,
+            ][..],
             &raw mut SCANSERVICE_EXE_ENTRY_6A40,
             zluda_scanservice_exe_entry_6a40 as *mut c_void,
         ),
@@ -7463,7 +7580,9 @@ unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
     ];
     let mut attached_any = false;
     for (label, rva, sig, slot, detour) in probes {
-        if DetourTransactionBegin() != NO_ERROR as i32 { continue; }
+        if DetourTransactionBegin() != NO_ERROR as i32 {
+            continue;
+        }
         if DetourUpdateThread(GetCurrentThread().0) != NO_ERROR as i32 {
             DetourTransactionAbort();
             continue;
@@ -7472,7 +7591,9 @@ unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
             DetourTransactionAbort();
             continue;
         }
-        if DetourTransactionCommit() != NO_ERROR as i32 { continue; }
+        if DetourTransactionCommit() != NO_ERROR as i32 {
+            continue;
+        }
         attached_any = true;
     }
     detours.insert(handle_key, ());
@@ -7482,7 +7603,6 @@ unsafe fn detour_scanservice_exe(handle: *mut c_void) -> Option<()> {
     ));
     Some(())
 }
-
 
 fn dll_file_name(dll_name_arg: *const UNICODE_STRING) -> Result<Vec<u16>, NTSTATUS> {
     let dll_name = unsafe { dll_name_arg.as_ref() }.ok_or(STATUS_INVALID_PARAMETER_3)?;
@@ -7499,7 +7619,6 @@ fn dll_file_name(dll_name_arg: *const UNICODE_STRING) -> Result<Vec<u16>, NTSTAT
     };
     Ok(dll_name.to_vec())
 }
-
 
 unsafe fn exstar_host_trace_on_load(
     dll_name_arg: *const UNICODE_STRING,
@@ -7585,8 +7704,8 @@ fn exstar_spawn_warning_dialog_closer() {
     }
     thread::spawn(|| {
         use windows_sys::Win32::UI::WindowsAndMessaging::{
-            EnumChildWindows, EnumWindows, GetClassNameW, GetWindowTextW,
-            GetWindowRect, GetWindowThreadProcessId, IsWindowVisible, PostMessageW, WM_CLOSE,
+            EnumChildWindows, EnumWindows, GetClassNameW, GetWindowRect, GetWindowTextW,
+            GetWindowThreadProcessId, IsWindowVisible, PostMessageW, WM_CLOSE,
         };
         let my_pid = unsafe { GetCurrentProcessId() };
         let deadline = Instant::now() + Duration::from_secs(120);
@@ -7645,13 +7764,9 @@ fn exstar_spawn_warning_dialog_closer() {
                         static FOUND_ERROR_CHILD: std::sync::atomic::AtomicBool =
                             std::sync::atomic::AtomicBool::new(false);
                         FOUND_ERROR_CHILD.store(false, Ordering::SeqCst);
-                        unsafe extern "system" fn check_child(
-                            child: HWND,
-                            _lparam: isize,
-                        ) -> BOOL {
+                        unsafe extern "system" fn check_child(child: HWND, _lparam: isize) -> BOOL {
                             let mut buf = [0u16; 512];
-                            let len =
-                                GetWindowTextW(child, buf.as_mut_ptr(), buf.len() as i32);
+                            let len = GetWindowTextW(child, buf.as_mut_ptr(), buf.len() as i32);
                             if len > 0 {
                                 let text = String::from_utf16_lossy(&buf[..len as usize]);
                                 if text.contains("Warning")
@@ -7781,7 +7896,7 @@ unsafe fn exstar_host_trace_existing_modules() {
     {
         return;
     }
-    
+
     let mut modules: Vec<(&CStr, unsafe fn(*mut c_void) -> Option<()>)> = Vec::new();
     if host_trace_enabled {
         modules.extend([
@@ -7854,7 +7969,7 @@ unsafe fn exstar_host_trace_existing_modules() {
             }
         }
     }
-    
+
     // For scanservice.exe, hook Sn3DDeviceEinStar.dll to unblock device cleanup deadlock
     if let Some((_, exe_name)) = exstar_current_exe("module_hook_device") {
         if exe_name.eq_ignore_ascii_case("scanservice.exe") {
@@ -7872,7 +7987,9 @@ unsafe fn exstar_host_trace_existing_modules() {
             .unwrap_or_else(|| "<unknown>".to_string());
         log_exstar_host(format_args!(
             "kind=init phase=exe_detours exe={} exe_handle={:p} exe_handle_null={}",
-            exe_name, exe_handle, exe_handle.is_null()
+            exe_name,
+            exe_handle,
+            exe_handle.is_null()
         ));
     }
     if !exe_handle.is_null() {
@@ -8143,7 +8260,9 @@ fn create_process(
     // created by zluda.exe. The Job Object now allows breakaway (we added
     // JOB_OBJECT_LIMIT_BREAKAWAY_OK to zluda_inject/src/bin.rs).
     const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x01000000;
-    let flags = dwcreationflags | windows_sys::Win32::System::Threading::CREATE_SUSPENDED | CREATE_BREAKAWAY_FROM_JOB;
+    let flags = dwcreationflags
+        | windows_sys::Win32::System::Threading::CREATE_SUSPENDED
+        | CREATE_BREAKAWAY_FROM_JOB;
     let mut proc_info_backup: windows_sys::Win32::System::Threading::PROCESS_INFORMATION =
         unsafe { mem::zeroed() };
     let proc_info = unsafe { source_proc_info.as_mut() }.unwrap_or(&mut proc_info_backup);
@@ -8550,7 +8669,8 @@ impl DetourDetachGuard {
             let dxgi_module = GetModuleHandleA(c"dxgi.dll".as_ptr().cast());
             if !dxgi_module.is_null() {
                 let proc_name = c"CreateDXGIFactory";
-                if let Some(create_fn) = GetProcAddress(dxgi_module as _, proc_name.as_ptr().cast()) {
+                if let Some(create_fn) = GetProcAddress(dxgi_module as _, proc_name.as_ptr().cast())
+                {
                     DXGI_CREATE_FACTORY_ORIGINAL = std::mem::transmute(create_fn);
                     DXGI_CREATE_FACTORY_HOOKED.store(true, std::sync::atomic::Ordering::SeqCst);
                     result.overriden_non_cuda_fns.push((
@@ -8577,18 +8697,12 @@ impl DetourDetachGuard {
                 &raw mut LOAD_LIBRARY_EX_W as *mut _ as _,
                 ZludaLoadLibraryExW as _,
             ),
-            (
-                &raw mut SLEEP_EX as *mut _ as _,
-                ZludaSleepEx as _,
-            ),
+            (&raw mut SLEEP_EX as *mut _ as _, ZludaSleepEx as _),
             (
                 &raw mut GET_USER_DEFAULT_LOCALE_NAME as *mut _ as _,
                 ZludaGetUserDefaultLocaleName as _,
             ),
-            (
-                &raw mut LOCK_FILE_EX as *mut _ as _,
-                ZludaLockFileEx as _,
-            ),
+            (&raw mut LOCK_FILE_EX as *mut _ as _, ZludaLockFileEx as _),
             (
                 &raw mut CREATE_MUTEX_A as *mut _ as _,
                 ZludaCreateMutexA as _,
@@ -8605,10 +8719,7 @@ impl DetourDetachGuard {
                 &raw mut EXIT_PROCESS_FN as *mut _ as _,
                 ZludaExitProcess as _,
             ),
-            (
-                &raw mut EXIT_THREAD_FN as *mut _ as _,
-                ZludaExitThread as _,
-            ),
+            (&raw mut EXIT_THREAD_FN as *mut _ as _, ZludaExitThread as _),
             (
                 &raw mut TERMINATE_PROCESS_FN as *mut _ as _,
                 ZludaTerminateProcess as _,
@@ -8776,21 +8887,25 @@ unsafe extern "system" fn DllMain(
     use windows_sys::Win32::System::SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
     if dwReason == DLL_PROCESS_ATTACH {
         windows_sys::Win32::System::Diagnostics::Debug::OutputDebugStringA(
-            c"[ZLUDA] DllMain: DLL_PROCESS_ATTACH begin".as_ptr().cast()
+            c"[ZLUDA] DllMain: DLL_PROCESS_ATTACH begin".as_ptr().cast(),
         );
         if DetourRestoreAfterWith() == FALSE {
             windows_sys::Win32::System::Diagnostics::Debug::OutputDebugStringA(
-                c"[ZLUDA] DllMain: DetourRestoreAfterWith FAILED".as_ptr().cast()
+                c"[ZLUDA] DllMain: DetourRestoreAfterWith FAILED"
+                    .as_ptr()
+                    .cast(),
             );
             return FALSE;
         }
         windows_sys::Win32::System::Diagnostics::Debug::OutputDebugStringA(
-            c"[ZLUDA] DllMain: DetourRestoreAfterWith OK".as_ptr().cast()
+            c"[ZLUDA] DllMain: DetourRestoreAfterWith OK"
+                .as_ptr()
+                .cast(),
         );
         match DetourDetachGuard::new() {
             Some(g) => {
                 windows_sys::Win32::System::Diagnostics::Debug::OutputDebugStringA(
-                    c"[ZLUDA] DllMain: DetourDetachGuard OK".as_ptr().cast()
+                    c"[ZLUDA] DllMain: DetourDetachGuard OK".as_ptr().cast(),
                 );
                 DETOUR_DROP = Some(g);
                 DETOUR_PATHS = Some(DetourPaths::new());
@@ -8807,11 +8922,7 @@ unsafe extern "system" fn DllMain(
                         || exe_name.eq_ignore_ascii_case("TestOpenglHelper.exe")
                     {
                         // Set env vars that Qt checks before calling QSystemLocale
-                        let vars = [
-                            (c"LC_ALL", c"C"),
-                            (c"LC_MESSAGES", c"C"),
-                            (c"LANG", c"C"),
-                        ];
+                        let vars = [(c"LC_ALL", c"C"), (c"LC_MESSAGES", c"C"), (c"LANG", c"C")];
                         extern "system" {
                             fn SetEnvironmentVariableA(
                                 lpname: *const u8,
@@ -8819,10 +8930,7 @@ unsafe extern "system" fn DllMain(
                             ) -> i32;
                         }
                         for (name, value) in &vars {
-                            SetEnvironmentVariableA(
-                                name.as_ptr().cast(),
-                                value.as_ptr().cast(),
-                            );
+                            SetEnvironmentVariableA(name.as_ptr().cast(), value.as_ptr().cast());
                         }
                         log_exstar_host(format_args!(
                             "kind=compat action=locale_override exe={} LC_ALL=C",
@@ -8853,7 +8961,7 @@ unsafe extern "system" fn DllMain(
             }
             None => {
                 windows_sys::Win32::System::Diagnostics::Debug::OutputDebugStringA(
-                    c"[ZLUDA] DllMain: DetourDetachGuard FAILED".as_ptr().cast()
+                    c"[ZLUDA] DllMain: DetourDetachGuard FAILED".as_ptr().cast(),
                 );
                 FALSE
             }

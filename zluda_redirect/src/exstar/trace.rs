@@ -3,7 +3,10 @@ use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::sync::{Mutex, OnceLock};
 
-use crate::{EXSTAR_APPUI_TRACE, EXSTAR_EXE_TRACE, EXSTAR_HOST_TRACE, EXSTAR_HOST_TRACE_FILE, EXSTAR_LIGHT_TRACE};
+use crate::{
+    EXSTAR_APPUI_TRACE, EXSTAR_EXE_TRACE, EXSTAR_HOST_TRACE, EXSTAR_HOST_TRACE_FILE,
+    EXSTAR_LIGHT_TRACE,
+};
 
 pub(crate) fn env_flag(name: &str) -> bool {
     let value = match env::var(name) {

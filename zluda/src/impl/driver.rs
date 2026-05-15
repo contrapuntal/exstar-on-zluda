@@ -144,7 +144,9 @@ pub(crate) fn init(flags: ::core::ffi::c_uint) -> CUresult {
         "op=cuInit phase=enter flags={} pid={} exe={:?}",
         flags,
         std::process::id(),
-        std::env::current_exe().ok().and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
     ));
     let hip_result = unsafe { hipInit(flags) };
     super::debug::log_launch(format_args!(
