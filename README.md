@@ -146,8 +146,7 @@ exstar-on-zluda/
     │   ├── EXSTAR_USER_MANUAL.md
     │   └── EXSTAR_COMPAT_REFERENCE.md
     ├── scripts/
-    │   ├── launch/                 launch + kill scripts; stock-zluda A/B
-    │   │                           harness for developer baseline comparison
+    │   ├── launch/                 launch + kill scripts
     │   └── debug/                  diagnostic helpers (cdb watchdog, event-log query)
     └── logs/                       per-run log output (gitignored)
 ```
