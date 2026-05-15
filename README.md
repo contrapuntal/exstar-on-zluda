@@ -119,18 +119,6 @@ and helpers. Once it's done, launch the same way as the binary release:
 
 The launcher script finds the binaries relative to the repo root automatically.
 
-### Cutting a release
-
-For maintainers cutting a public release:
-
-```powershell
-.\run_xtask_release.cmd          # build with --release (smaller, optimized)
-.\package_release.ps1 -Version 0.1.0   # bundle binaries + scripts + README → zip
-git tag -a v0.1.0 -m "..."
-git push origin v0.1.0
-.\release_publish.ps1 -Version 0.1.0   # upload zip to a new GitHub Release via gh CLI
-```
-
 ## Repo layout
 
 ```
