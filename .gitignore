@@ -1,5 +1,8 @@
-target/
-Cargo.lock
+# Anchored to the repo root with a leading slash — bare `target/` would also
+# hide case-equivalent paths like ext/llvm-project/llvm/lib/Target/ on
+# case-insensitive filesystems (e.g. NTFS), silently dropping ~2500 LLVM
+# source files from clones.
+/target/
 
 .vscode/
 .idea/
