@@ -16,6 +16,9 @@ ptx/lib/zluda_ptx_impl.ll
 *.log
 run_xtask_debug.log
 
+# Built release zips (live as GitHub Release attachments, not in the repo)
+/exstar-on-zluda-v*-windows-x64.zip
+
 # Planning / debugging notes / sitreps live in the sibling zluda-exstar-archive repo,
 # not in this public-facing repo.
 docs/plans/
