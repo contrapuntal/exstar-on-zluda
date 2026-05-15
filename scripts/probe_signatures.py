@@ -5,11 +5,20 @@ v1.1.1-8 for the same bytes to find the new RVA.
 Output: for each probe, prints old_rva, sig, new_rva (or multiple/none), and
 emits a Rust-ready probe entry.
 """
+import os
 import struct
 import sys
 from pathlib import Path
 
-BASELINES = Path(r"%USERPROFILE%\proj\exstar-baselines")
+# Set EXSTAR_BASELINES to the directory containing version-named subdirectories
+# (e.g. v1.1.0.16/, v1.1.1-8/), each holding extracted EXStar Hub binaries.
+_baselines_env = os.environ.get("EXSTAR_BASELINES")
+if not _baselines_env:
+    sys.exit(
+        "EXSTAR_BASELINES is not set. Point it at a directory containing\n"
+        "per-version subdirs (v1.1.0.16, v1.1.1-8, ...) of extracted EXStar Hub binaries."
+    )
+BASELINES = Path(_baselines_env)
 OLD = BASELINES / "v1.1.0.16"
 NEW = BASELINES / "v1.1.1-8"
 

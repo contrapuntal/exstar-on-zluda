@@ -5383,10 +5383,8 @@ unsafe fn scanservice_watchdog(main_thread_id: u32) {
     // Write to our own file — the shared host log might not be thread-safe
     let pid = GetCurrentProcessId();
     let current_thread_id = GetCurrentThreadId();
-    let watchdog_path = format!(
-        "<runtime-repo>\\target\\debug\\debug\\launcher\\scanservice_watchdog_{}.log",
-        pid
-    );
+    let watchdog_path = std::env::temp_dir()
+        .join(format!("zluda_scanservice_watchdog_{}.log", pid));
     let _ = std::fs::write(&watchdog_path, format!("watchdog_start pid={} thread_id={}\n", pid, main_thread_id));
     // No sleep — process dies within milliseconds
     let mut log_lines = Vec::new();

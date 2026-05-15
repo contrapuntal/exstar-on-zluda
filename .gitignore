@@ -5,3 +5,16 @@ Cargo.lock
 .idea/
 
 ptx/lib/zluda_ptx_impl.ll
+
+# Local Claude Code session permissions (never share)
+.claude/settings.local.json
+
+# Local dev / debug artifacts
+*.log
+run_xtask_debug.log
+
+# Planning / debugging notes / sitreps live in the sibling zluda-exstar-archive repo,
+# not in this public-facing repo.
+docs/plans/
+docs/superpowers/
+AGENTS.md
