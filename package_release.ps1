@@ -157,6 +157,14 @@ LIMITATIONS / RISK
 WHEN THINGS GO WRONG
 --------------------
 
+If launching fails with "The operation was canceled by the user", Windows
+SmartScreen blocked the binaries because they're "downloaded from the
+internet". The launcher tries to clear that flag automatically; if it
+can't (e.g. because the zip is on a network share with restrictive ACLs),
+unblock manually:
+  In an elevated PowerShell, cd into the unzipped folder and run:
+    Get-ChildItem -Recurse | Unblock-File
+
 If EXStar hangs on the splash or a scan crashes:
   - Run launcher\kill_exstar_zluda.cmd, then launcher\launch_exstar_zluda.cmd
   - Check the per-run log it produced under exstar-on-zluda\logs\launcher\

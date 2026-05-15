@@ -32,6 +32,16 @@ foreach ($c in $candidates) {
 if (-not $zludaDir) {
     throw "zluda.exe not found near this script. Looked in: $($candidates.Z -join '; ')"
 }
+
+# Clear Mark of the Web from the binaries we're about to invoke. Windows tags
+# every file extracted from a zip downloaded via a browser with a
+# Zone.Identifier alternate data stream; without unblocking, SmartScreen / UAC
+# may deny Start-Process below with "The operation was canceled by the user".
+# No-op (and silent) if the files don't carry MOTW.
+Get-ChildItem -LiteralPath $zludaDir -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -in '.exe', '.dll' } |
+    Unblock-File -ErrorAction SilentlyContinue
+
 $exstarDir = 'C:\Program Files\Shining3d\EXStar Hub'
 $processNames = @(
     'zluda.exe',
