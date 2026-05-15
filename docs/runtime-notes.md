@@ -1,8 +1,15 @@
 # Runtime Notes
 
-- This repo is the primary development home for source changes.
-- `zluda_redirect` remains required for the current working EXStar path.
-- EXStar-specific redirect code should be isolated over time under `zluda_redirect/src/exstar/`.
-- Build output in `target/debug/` serves as the binary staging area (replaces the old `applications/` directory from the monorepo).
-- Launch scripts in the sibling `exstar-on-zluda` repo discover binaries here via relative path.
-- Do not store launcher logs, screenshots, or dumps here — those belong in `exstar-on-zluda/logs/`.
+Internal architecture notes for developers working on the ZLUDA fork side of
+this repo. End-user documentation lives in `exstar/docs/`; this file is for
+contributors touching the Rust source.
+
+- `zluda_redirect` is the EXStar compatibility entrypoint — required at
+  runtime for EXStar Hub to launch under this fork.
+- New EXStar-specific redirect logic should be isolated under
+  `zluda/zluda_redirect/src/exstar/` rather than scattered through `lib.rs`.
+- Build output lives in `target/debug/` (or `target/release/`); the launcher
+  scripts in `exstar/scripts/launch/` find these binaries via repo-relative
+  paths — no manual sync required.
+- Per-run launcher logs land in `exstar/logs/launcher/` (gitignored).
+  Crash dumps go in `exstar/dumps/` (gitignored). Never commit either.
