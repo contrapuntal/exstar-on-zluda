@@ -73,6 +73,16 @@ if (-not $remoteTag) {
     throw "Git tag $tag is not on origin. Run `git push origin $tag` first."
 }
 
+# Pre-flight 5: run the structural validator. Bails on a non-zero exit.
+$validator = Join-Path $repoRoot 'validate_release_zip.ps1'
+if (-not (Test-Path $validator)) {
+    throw "validate_release_zip.ps1 not found at $validator -- expected alongside this script."
+}
+& $validator -Version $Version
+if ($LASTEXITCODE -ne 0) {
+    throw "Zip validation failed -- not publishing. See output above."
+}
+
 # Compute artifacts the release body will reference.
 $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
 $sizeMB = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
