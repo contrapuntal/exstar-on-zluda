@@ -21,9 +21,7 @@ this file.
 
 - This repo: `contrapuntal/exstar-on-zluda` on `master`
 - EXStar install path: `C:\Program Files\Shining3d\EXStar Hub`
-- Validated EXStar Hub versions (as of 2026-05-14):
-  - `v1.1.0.16`
-  - `v1.1.1-8`
+- Validated EXStar Hub version (as of 2026-05-14):
   - `v1.1.1-9` (latest)
 
 The repo only contains the ZLUDA fork and supporting scripts — it does **not**
@@ -229,14 +227,6 @@ Do not do these unless you are deliberately re-debugging a regression:
 - Do not broaden the warning-dialog closer to generic "small Qt windows".
 - Do not assume the splash closing is the failure point.
 - Do not trust the old `PrestartCheck.dll` on-disk patch as the final fix.
-
-## Useful Tools (for deeper debugging)
-
-- `cdb.exe` and `windbg.exe` from the Windows Debugging Tools
-- `procdump64.exe` from Sysinternals
-- `dumpbin.exe` from the MSVC Build Tools
-- [Ghidra](https://ghidra-sre.org/)
-- [Process Monitor](https://learn.microsoft.com/sysinternals/downloads/procmon) from Sysinternals
 
 ## Related Reading
 

@@ -24,7 +24,12 @@ if exist "%BUILD_LOG%" del "%BUILD_LOG%"
 
 cargo --version
 echo [run_xtask_debug] cargo xtask started > "%BUILD_LOG%"
-cargo xtask >> "%BUILD_LOG%" 2>&1
+echo [run_xtask_debug] streaming output to terminal and to %BUILD_LOG%
+echo [run_xtask_debug] first build is slow (15-60 min) — Cargo compiles ~200 deps + LLVM
+rem  Pipe through PowerShell's Tee-Object so build output appears in the terminal
+rem  in real time AND is appended to the log file. `exit $LASTEXITCODE` inside the
+rem  scriptblock preserves cargo's exit code rather than PowerShell's own.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { cargo xtask 2>&1 | Tee-Object -FilePath '%BUILD_LOG%' -Append; exit $LASTEXITCODE }"
 set "BUILD_EXIT=%errorlevel%"
 echo [run_xtask_debug] cargo xtask exit code: %BUILD_EXIT%
 echo [run_xtask_debug] cargo xtask exit code: %BUILD_EXIT%>> "%BUILD_LOG%"

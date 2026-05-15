@@ -1,9 +1,9 @@
-$ErrorActionPreference = 'Stop'
-
 param(
     [int]$TimeoutSeconds = 300,
     [int]$PollMilliseconds = 250
 )
+
+$ErrorActionPreference = 'Stop'
 
 $exstarRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
 $debugDir = Join-Path $exstarRoot 'logs\launcher'

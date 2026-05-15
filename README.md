@@ -20,20 +20,34 @@ patched [ZLUDA](https://github.com/vosen/ZLUDA) runtime.
 ## Target
 
 - **Software**: Shining3D EXStar Hub for Windows
-- **GPUs**: AMD (RDNA / RDNA2 / RDNA3)
+- **GPUs**: AMD — only the specific configuration in *Tested on* below has
+  been validated; other AMD GPUs that ZLUDA itself supports may also work,
+  but this project has not tested them
 - **OS**: Windows 10 / 11
+- **Tested on**: AMD Ryzen AI MAX+ 395 with 128 GB RAM
 
 ## Validated EXStar Hub versions (as of 2026-05-14)
 
 | Version | Status |
 | --- | --- |
-| v1.1.0.16 | working |
-| v1.1.1-8 | working |
 | v1.1.1-9 | working (latest) |
 
 ## Quickstart — from source
 
-Prerequisites on Windows:
+### Disk + time budget
+
+- **Clone download**: ~260 MB (most of which is the vendored LLVM source tree)
+- **Source on disk after clone**: ~1.5 GB
+- **`target/` after first debug build**: ~15 GB (Cargo builds + caches every
+  transitive dependency; this is normal for a workspace this size)
+- **Recommended free disk space**: **≥ 20 GB** to leave room for `target/`,
+  the Cargo registry cache (`~/.cargo/registry/`, shared across Rust projects),
+  and slack for incremental rebuilds
+- **First-build time**: 15–60 min depending on CPU and network — most of it is
+  compiling LLVM bindings and ~200 transitive crates. Subsequent rebuilds use
+  Cargo's incremental cache and are fast (seconds to minutes).
+
+### Prerequisites on Windows
 
 - Git **with Git LFS** (`.gitattributes` puts `*.dll` and `*.bc` under LFS;
   cloning without LFS leaves them as pointer files and the build fails)
@@ -103,13 +117,11 @@ start with the most recent file there.
 
 Common gotcha: if rebuilding fails with "failed to remove file …zluda_redirect.dll
 Access is denied", a previous EXStar / zluda process is still holding the DLL —
-run `.\exstar\scripts\launch\kill_exstar_zluda.cmd` then rebuild.
+run `.\exstar\scripts\launch\kill_exstar_zluda.cmd` then re-run `.\run_xtask_debug.cmd`.
 
 ## License
 
 Dual-licensed under MIT (`LICENSE-MIT`) and Apache-2.0 (`LICENSE-APACHE`), matching
 upstream ZLUDA.
 
-Upstream ZLUDA copyright remains with its original authors. EXStar-specific
-patches and the launcher / docs in `exstar/` are Copyright © 2026 Aaron Yang,
-licensed under the same terms.
+Upstream ZLUDA copyright remains with its original authors.
